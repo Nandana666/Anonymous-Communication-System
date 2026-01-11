@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Official Chat</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="chat-header">
+  <h2>Official Chat</h2>
+  <span id="anonID"></span>
+  <span id="replyToken"></span>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<div class="chat-container">
+  <div class="messages" id="officialMessages"></div>
+  <div class="input-area">
+    <input id="messageInput" placeholder="Send to official...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+<script src="js/crypto-js.js"></script>
+<script src="chat.js"></script>
+<script>initChat("official");</script>
+</body>
+</html>

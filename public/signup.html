@@ -1,62 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Official Signup</title>
-  <style>
-    body { font-family: Arial; margin: 20px; }
-    input { padding: 5px; width: 70%; margin-bottom: 10px; }
-    button { padding: 5px 10px; }
-    .message { margin-top: 10px; color: green; }
-    .error { color: red; }
-  </style>
-</head>
-<body>
-  <h2>Official Signup</h2>
-  <input id="email" placeholder="Email"><br>
-  <input id="department" placeholder="Department"><br>
-  <input id="inviteCode" placeholder="Invite Code"><br>
-  <button onclick="signup()">Signup</button>
-  <div class="message" id="message"></div>
+<h2>Official Request</h2>
+<input id="email" placeholder="Email">
+<input id="dept" placeholder="Department">
+<button onclick="req()">Submit</button>
+<p id="m"></p>
 
 <script>
-async function signup() {
-  const email = document.getElementById("email").value;
-  const department = document.getElementById("department").value;
-  const inviteCode = document.getElementById("inviteCode").value;
-  const msgEl = document.getElementById("message");
-
-  if (!email || !department || !inviteCode) {
-    msgEl.innerHTML = "All fields are required"; msgEl.className="error"; 
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, department, inviteCode })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      msgEl.innerHTML = `Signup successful! Access Key: <b>${data.accessKey}</b> <button onclick="copyKey('${data.accessKey}')">Copy</button>`;
-      msgEl.className="message";
-
-      // Optional: redirect to login after 5 sec
-      setTimeout(() => { window.location.href = "login.html"; }, 5000);
-    } else {
-      msgEl.innerHTML = data.error; msgEl.className="error";
-    }
-  } catch(err) {
-    msgEl.innerHTML = err.message; msgEl.className="error";
-  }
-}
-
-// Copy access key to clipboard
-function copyKey(key) {
-  navigator.clipboard.writeText(key);
-  alert("Access Key copied to clipboard!");
+async function req(){
+  const r=await fetch("/api/official/request",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({email:email.value,department:dept.value})
+  });
+  m.textContent=(await r.json()).message;
 }
 </script>
-</body>
-</html>

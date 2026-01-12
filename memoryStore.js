@@ -1,60 +1,59 @@
 const crypto = require("crypto");
 
 const memoryStore = {
-  // Anonymous clients for public chat
   publicClients: new Set(),
-
-  // Private rooms for private chat
   privateRooms: {},
 
-  // Registered officials: email -> { email, department, inviteCode, accessKey }
+  // Approved officials
   officialSessions: {},
 
-  // WebSocket mapping for department-based official chat
-  // department -> replyToken -> Set of official WS
-  departmentSessions: {},
+  // Pending official signup requests
+  pendingOfficials: {},
 
-  // Citizen WS mapping: replyToken -> WS
-  citizenSessions: {},
+  // Invite codes → email mapping
+  validInviteCodes: [],
 
-  // Admin-generated valid invite codes
-  validInviteCodes: []
+  citizenSessions: {}
 };
 
-// ----------------- Utility Functions -----------------
-
-// Generate random access key for new official
 const generateAccessKey = () => crypto.randomBytes(4).toString("hex");
 
-// Create a new official using invite code
+// Step 1: Official submits request
+memoryStore.addOfficialRequest = ({ email, department }) => {
+  if (memoryStore.pendingOfficials[email])
+    throw new Error("Request already submitted");
+
+  memoryStore.pendingOfficials[email] = { email, department };
+};
+
+// Step 2: Admin approves → invite code
+memoryStore.approveOfficial = (email) => {
+  const req = memoryStore.pendingOfficials[email];
+  if (!req) throw new Error("Request not found");
+
+  const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  memoryStore.validInviteCodes.push({ inviteCode, email });
+
+  delete memoryStore.pendingOfficials[email];
+  return inviteCode;
+};
+
+// Step 3: Final signup
 memoryStore.createOfficial = ({ email, department, inviteCode }) => {
-  if (!memoryStore.validInviteCodes.includes(inviteCode)) {
-    throw new Error("Invalid invite code");
-  }
-  if (memoryStore.officialSessions[email]) throw new Error("Official already exists");
+  const valid = memoryStore.validInviteCodes.find(
+    i => i.inviteCode === inviteCode && i.email === email
+  );
+  if (!valid) throw new Error("Invalid invite code");
 
   const accessKey = generateAccessKey();
-  memoryStore.officialSessions[email] = { email, department, inviteCode, accessKey };
+  memoryStore.officialSessions[email] = { email, department, accessKey };
 
-  // Remove used invite code
-  memoryStore.validInviteCodes = memoryStore.validInviteCodes.filter(c => c !== inviteCode);
+  memoryStore.validInviteCodes =
+    memoryStore.validInviteCodes.filter(i => i.inviteCode !== inviteCode);
 
   return { email, department, accessKey };
 };
 
-// Get official by email
 memoryStore.getOfficial = (email) => memoryStore.officialSessions[email];
-
-// Get all officials in a department
-memoryStore.getOfficialsByDepartment = (department) => {
-  return Object.values(memoryStore.officialSessions).filter(o => o.department === department);
-};
-
-// Add new invite code (used by admin)
-memoryStore.addInviteCode = () => {
-  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-  memoryStore.validInviteCodes.push(code);
-  return code;
-};
 
 module.exports = memoryStore;

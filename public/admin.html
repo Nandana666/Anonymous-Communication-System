@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Login</title>
+</head>
+<body>
+<h2>Admin Login</h2>
+<input id="u" placeholder="Username"><br>
+<input id="p" placeholder="Password" type="password"><br>
+<button onclick="login()">Login</button>
+<p id="msg"></p>
+
+<script>
+async function login() {
+  const r = await fetch("http://localhost:5000/api/admin/login", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({username:u.value,password:p.value})
+  });
+
+  if(r.ok){
+    const d = await r.json();
+    localStorage.setItem("ADMIN_JWT", d.token);
+    window.location.href = "admin-invite.html";
+  } else {
+    msg.textContent = "Invalid credentials";
+  }
+}
+</script>
+</body>
+</html>

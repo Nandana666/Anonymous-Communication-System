@@ -8,36 +8,57 @@
     input { padding: 5px; width: 70%; margin-bottom: 10px; }
     button { padding: 5px 10px; }
     .message { margin-top: 10px; color: red; }
+    .link { margin-top: 15px; }
+    a { color: #0066cc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <h2>Official Login</h2>
+
   <input id="email" placeholder="Email"><br>
   <input id="accessKey" placeholder="Access Key"><br>
   <button onclick="login()">Login</button>
+
   <div class="message" id="msg"></div>
+
+  <!-- ✅ Signup option -->
+  <div class="link">
+    New official? <a href="signup.html">Request Signup / Register here</a>
+  </div>
 
 <script>
 async function login(){
   const email = document.getElementById("email").value;
   const accessKey = document.getElementById("accessKey").value;
   const msgEl = document.getElementById("msg");
-  if(!email || !accessKey){ msgEl.innerText="All fields required"; return; }
+
+  if(!email || !accessKey){
+    msgEl.innerText = "All fields required";
+    return;
+  }
 
   try{
     const res = await fetch("http://localhost:5000/api/login",{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({email,accessKey})
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ email, accessKey })
     });
+
     const data = await res.json();
+
     if(res.ok){
       localStorage.setItem("JWT_TOKEN", data.token);
-      msgEl.style.color="green";
-      msgEl.innerText="Login successful! Redirecting...";
-      setTimeout(()=>window.location.href="official.html",1000);
-    } else msgEl.innerText=data.error;
-  }catch(e){ msgEl.innerText=e.message; }
+      msgEl.style.color = "green";
+      msgEl.innerText = "Login successful! Redirecting...";
+      setTimeout(() => window.location.href = "official.html", 1000);
+    } else {
+      msgEl.style.color = "red";
+      msgEl.innerText = data.error;
+    }
+  }catch(e){
+    msgEl.innerText = e.message;
+  }
 }
 </script>
 </body>

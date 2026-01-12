@@ -8,11 +8,29 @@ const jwtAuth = require("./jwtAuth");
 
 const app = express();
 
-// ✅ Middleware
+/* =======================
+   GLOBAL CORS FIX
+   ======================= */
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS"
+  );
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// ---------- OFFICIAL REQUEST ----------
+/* =======================
+   OFFICIAL REQUEST
+   ======================= */
 app.post("/api/official/request", (req, res) => {
   try {
     memoryStore.addOfficialRequest(req.body);
@@ -22,68 +40,87 @@ app.post("/api/official/request", (req, res) => {
   }
 });
 
-// ---------- LOGIN / SIGNUP ----------
-app.post("/api/signup", (req, res) => {
-  try {
-    const official = memoryStore.createOfficial(req.body);
-    res.json(official);
-  } catch (e) {
-    res.status(400).json({ error: e.message });
-  }
+/* =======================
+   OFFICIAL STATUS (POPUP)
+   ======================= */
+app.get("/api/official/status", (req, res) => {
+  const { email } = req.query;
+  if (!email) return res.status(400).json({ error: "Email required" });
+
+  const official = memoryStore.getApprovedOfficial(email);
+
+  if (!official) return res.json({ approved: false });
+
+  res.json({
+    approved: true,
+    accessKey: official.accessKey,
+    department: official.department
+  });
 });
 
-app.post("/api/login", async (req, res) => {
+/* =======================
+   OFFICIAL LOGIN
+   ======================= */
+app.post("/api/login", (req, res) => {
   try {
-    const token = await jwtAuth.loginOfficial(req.body);
+    const token = jwtAuth.loginOfficial(req.body);
     res.json({ token });
   } catch (e) {
     res.status(401).json({ error: e.message });
   }
 });
 
-// ---------- ADMIN ----------
+/* =======================
+   ADMIN SECTION
+   ======================= */
 const ADMIN = { username: "admin", password: "Admin@123" };
 
 app.post("/api/admin/login", (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN.username && password === ADMIN.password) {
-    const token = jwt.sign({ role: "admin" }, jwtAuth.SECRET);
+    const token = jwt.sign({ role: "admin" }, jwtAuth.SECRET, {
+      expiresIn: "2h"
+    });
     res.json({ token });
-  } else res.status(401).json({ error: "Invalid credentials" });
+  } else {
+    res.status(401).json({ error: "Invalid credentials" });
+  }
 });
 
-const verifyAdmin = (req, res, next) => {
+function verifyAdmin(req, res, next) {
   try {
-    const d = jwt.verify(req.headers.authorization.split(" ")[1], jwtAuth.SECRET);
-    if (d.role !== "admin") throw "";
+    const token = req.headers.authorization.split(" ")[1];
+    const decoded = jwt.verify(token, jwtAuth.SECRET);
+    if (decoded.role !== "admin") throw "";
     next();
   } catch {
     res.sendStatus(403);
   }
-};
+}
 
-// Admin fetch pending requests
 app.get("/api/admin/requests", verifyAdmin, (req, res) => {
   res.json(memoryStore.pendingOfficials);
 });
 
-// Admin fetch approved officials
 app.get("/api/admin/approved", verifyAdmin, (req, res) => {
   res.json(memoryStore.officialSessions);
 });
 
-// Approve official → generate invite/access key
 app.post("/api/admin/approve", verifyAdmin, (req, res) => {
   try {
-    const inviteCode = memoryStore.approveOfficial(req.body.email);
-    res.json({ inviteCode });
+    const accessKey = memoryStore.approveOfficial(req.body.email);
+    res.json({ accessKey });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
-// ---------- SERVER ----------
+/* =======================
+   SERVER
+   ======================= */
 const server = http.createServer(app);
 require("./websocket")(server);
 
-server.listen(5000, () => console.log("✅ Server running at http://localhost:5000"));
+server.listen(5000, () =>
+  console.log("✅ Server running at http://localhost:5000")
+);

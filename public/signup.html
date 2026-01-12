@@ -2,43 +2,86 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Official Signup Request</title>
+  <title>Official Signup</title>
   <style>
     body { font-family: Arial; margin: 20px; }
-    input, select { padding: 5px; width: 70%; margin-bottom: 10px; }
-    button { padding: 5px 10px; }
-    .message { margin-top: 10px; }
+    input, select, button { padding: 8px; margin: 6px 0; width: 300px; }
+    #popup {
+      display: none;
+      border: 2px solid green;
+      padding: 15px;
+      margin-top: 20px;
+      background: #eaffea;
+    }
   </style>
 </head>
 <body>
-  <h2>Official Signup Request</h2>
-  <input id="email" placeholder="Email"><br>
-  <select id="department">
-    <option value="HR">HR</option>
-    <option value="Finance">Finance</option>
-    <option value="IT">IT</option>
-    <option value="Support">Support</option>
-  </select><br>
-  <button onclick="requestSignup()">Submit Request</button>
-  <div class="message" id="msg"></div>
+
+<h2>Official Signup Request</h2>
+
+<input id="email" placeholder="Official Email"><br>
+
+<select id="department">
+  <option value="HR">HR</option>
+  <option value="IT">IT</option>
+  <option value="Finance">Finance</option>
+</select><br>
+
+<button onclick="requestSignup()">Submit Request</button>
+<button onclick="checkStatus()">Check Approval</button>
+
+<div id="msg"></div>
+
+<div id="popup">
+  <h3>Approved ✅</h3>
+  <p><b>Access Key:</b></p>
+  <input id="accessKey" readonly>
+  <button onclick="copyKey()">Copy</button>
+</div>
 
 <script>
-async function requestSignup(){
-  const email = document.getElementById("email").value;
-  const department = document.getElementById("department").value;
-  const msgEl = document.getElementById("msg");
-  if(!email || !department){ msgEl.innerText="All fields required"; return; }
+const API = "http://localhost:5000";
 
-  try{
-    const res = await fetch("http://localhost:5000/api/official/request",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({email,department})
-    });
-    const data = await res.json();
-    msgEl.innerText = data.message || data.error;
-  }catch(e){ msgEl.innerText = e.message; }
+async function requestSignup(){
+  const email = emailEl();
+  const department = document.getElementById("department").value;
+  const msg = document.getElementById("msg");
+
+  const res = await fetch(API + "/api/official/request", {
+    method: "POST",
+    headers: { "Content-Type":"application/json" },
+    body: JSON.stringify({ email, department })
+  });
+
+  const data = await res.json();
+  msg.innerText = data.message || data.error;
+}
+
+async function checkStatus(){
+  const email = emailEl();
+  const res = await fetch(API + "/api/official/status?email=" + email);
+  const data = await res.json();
+
+  if (!data.approved) {
+    alert("Not approved yet");
+    return;
+  }
+
+  document.getElementById("popup").style.display = "block";
+  document.getElementById("accessKey").value = data.accessKey;
+}
+
+function copyKey(){
+  const key = document.getElementById("accessKey");
+  key.select();
+  document.execCommand("copy");
+  alert("Access Key Copied!");
+}
+
+function emailEl(){
+  return document.getElementById("email").value;
 }
 </script>
+
 </body>
 </html>

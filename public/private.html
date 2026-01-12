@@ -8,15 +8,20 @@
 <div class="chat-header">
   <h2>Private Chat</h2>
   <span id="anonID"></span>
+  <span id="roomCode" style="margin-left:15px;"></span>
+  <!-- <button onclick="createRoom()">Create Room</button> -->
   <button onclick="logout()">Logout</button>
 </div>
 
+
 <div class="chat-container">
   <div class="room-box">
-    <input id="roomInput" placeholder="Enter Room Code">
-    <button onclick="joinRoom()">Join</button>
-    <span id="roomStatus"></span>
-  </div>
+  <input id="roomInput" placeholder="Enter Room Code">
+  <button onclick="joinRoom()">Join</button>
+  <button onclick="createRoom()">Create Room</button>
+  <span id="roomStatus"></span>
+</div>
+
 
   <div class="messages" id="privateMessages"></div>
   <div class="input-area">

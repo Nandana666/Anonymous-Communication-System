@@ -1,4 +1,3 @@
-
 let ws;
 let chatType;
 let room = null;
@@ -9,6 +8,10 @@ const AES_KEY = "my_secret_key_123"; // AES key for encrypt/decrypt
 // ------------------ UTIL ------------------
 function generateID() {
   return Math.random().toString(36).substring(2, 10);
+}
+
+function generateRoomCode() {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
 // ------------------ INIT ------------------
@@ -36,6 +39,11 @@ function initChat(type) {
     tokenEl.style.display = "none";
   }
 
+  if (type === "private") {
+    const roomStatus = document.getElementById("roomStatus");
+    if (roomStatus) roomStatus.innerText = "No room joined";
+  }
+
   ws = new WebSocket("ws://localhost:5000");
 
   ws.onopen = () => {
@@ -50,8 +58,11 @@ function initChat(type) {
       const data = JSON.parse(e.data);
       if (!data.message) return;
 
-      // Decrypt the message
-      const decrypted = CryptoJS.AES.decrypt(data.message, AES_KEY).toString(CryptoJS.enc.Utf8);
+      const decrypted = CryptoJS.AES.decrypt(
+        data.message,
+        AES_KEY
+      ).toString(CryptoJS.enc.Utf8);
+
       addMessage(data.sender, decrypted, data.chatType);
     } catch (err) {
       console.error("Invalid message:", e.data);
@@ -70,13 +81,9 @@ function addMessage(sender, msg, type) {
 
   const div = document.createElement("div");
 
-  // Display 'You' for your own messages
   if (sender === anonID) {
     div.className = "msg you";
     div.innerText = `You: ${msg}`;
-  } else if (type === "official" && sender === "Official") {
-    div.className = "msg official";
-    div.innerText = `${sender}: ${msg}`;
   } else {
     div.className = "msg other";
     div.innerText = `${sender}: ${msg}`;
@@ -86,32 +93,59 @@ function addMessage(sender, msg, type) {
   box.scrollTop = box.scrollHeight;
 }
 
-
 // ------------------ SEND ------------------
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const message = input.value.trim();
   if (!message) return;
 
-  // Encrypt message before sending
   const encrypted = CryptoJS.AES.encrypt(message, AES_KEY).toString();
 
-  const payload = { sender: anonID, message: encrypted, chatType };
+  const payload = {
+    sender: anonID,
+    message: encrypted,
+    chatType
+  };
+
   if (chatType === "private") payload.room = room;
   if (chatType === "official") payload.replyToken = replyToken;
 
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
-  else console.warn("⚠ WebSocket not ready");
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(payload));
+  } else {
+    console.warn("⚠ WebSocket not ready");
+  }
 
   input.value = "";
 }
 
-// ------------------ PRIVATE ------------------
+// ------------------ PRIVATE CHAT ------------------
+
+// Create random room
+function createRoom() {
+  if (chatType !== "private") return;
+
+  room = generateRoomCode();
+
+  const roomStatus = document.getElementById("roomStatus");
+  if (roomStatus) roomStatus.innerText = "Room Code: " + room;
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: "join", room }));
+  }
+}
+
+// Join existing room
 function joinRoom() {
-  room = document.getElementById("roomInput").value.trim();
+  room = document.getElementById("roomInput").value.trim().toUpperCase();
   if (!room) return alert("Enter room code");
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "join", room }));
-  document.getElementById("roomStatus").innerText = "Joined room: " + room;
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: "join", room }));
+  }
+
+  const roomStatus = document.getElementById("roomStatus");
+  if (roomStatus) roomStatus.innerText = "Joined room: " + room;
 }
 
 // ------------------ LOGOUT ------------------
@@ -119,4 +153,3 @@ function logout() {
   if (ws && ws.readyState === WebSocket.OPEN) ws.close();
   location.href = "index.html";
 }
-

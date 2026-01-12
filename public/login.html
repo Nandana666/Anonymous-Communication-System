@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Official Chat</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    .chat-header { margin-bottom: 10px; }
+    .messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 5px; margin-bottom: 10px; }
+    input { width: 70%; padding: 5px; }
+    button { padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <div class="chat-header">
+    <h2>Official Chat</h2>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="messages" id="messages"></div>
+  <input id="msg" placeholder="Message to citizen...">
+  <button onclick="sendMessage()">Send</button>
+
+<script>
+let ws;
+let replyToken = null; // Will select citizen replyToken dynamically
+const messagesEl = document.getElementById("messages");
+
+// Retrieve JWT
+const token = localStorage.getItem("JWT_TOKEN");
+if (!token) {
+  alert("You are not logged in!");
+  window.location.href = "login.html";
+}
+
+// Connect WebSocket with JWT
+ws = new WebSocket(`ws://${location.host}?token=${token}`);
+
+ws.onopen = () => {
+  console.log("WebSocket connected as official");
+};
+
+ws.onmessage = (e) => {
+  const msg = JSON.parse(e.data);
+
+  // Show messages only relevant to this official
+  if (msg.chatType === "official") {
+    if (msg.replyToken) replyToken = msg.replyToken;
+    messagesEl.innerHTML += `<b>${msg.department}:</b> ${msg.text}<br>`;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+};
+
+// Send message to citizen
+function sendMessage() {
+  const input = document.getElementById("msg");
+  if (!input.value || !replyToken) return alert("No citizen selected to reply");
+
+  ws.send(JSON.stringify({
+    chatType: "official",
+    text: input.value,
+    replyToCitizenToken: replyToken
+  }));
+
+  input.value = "";
+}
+
+// Logout function
+function logout() {
+  localStorage.removeItem("JWT_TOKEN");
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>

@@ -1,15 +1,44 @@
-<h2>Official Request</h2>
-<input id="email" placeholder="Email">
-<input id="dept" placeholder="Department">
-<button onclick="req()">Submit</button>
-<p id="m"></p>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Official Signup Request</title>
+  <style>
+    body { font-family: Arial; margin: 20px; }
+    input, select { padding: 5px; width: 70%; margin-bottom: 10px; }
+    button { padding: 5px 10px; }
+    .message { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Official Signup Request</h2>
+  <input id="email" placeholder="Email"><br>
+  <select id="department">
+    <option value="HR">HR</option>
+    <option value="Finance">Finance</option>
+    <option value="IT">IT</option>
+    <option value="Support">Support</option>
+  </select><br>
+  <button onclick="requestSignup()">Submit Request</button>
+  <div class="message" id="msg"></div>
 
 <script>
-async function req(){
-  const r=await fetch("/api/official/request",{
-    method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({email:email.value,department:dept.value})
-  });
-  m.textContent=(await r.json()).message;
+async function requestSignup(){
+  const email = document.getElementById("email").value;
+  const department = document.getElementById("department").value;
+  const msgEl = document.getElementById("msg");
+  if(!email || !department){ msgEl.innerText="All fields required"; return; }
+
+  try{
+    const res = await fetch("http://localhost:5000/api/official/request",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({email,department})
+    });
+    const data = await res.json();
+    msgEl.innerText = data.message || data.error;
+  }catch(e){ msgEl.innerText = e.message; }
 }
 </script>
+</body>
+</html>

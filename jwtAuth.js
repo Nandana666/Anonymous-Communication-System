@@ -1,34 +1,21 @@
 const jwt = require("jsonwebtoken");
 const memoryStore = require("./memoryStore");
 
-const SECRET = "jwt-secret";
-exports.SECRET = SECRET;
+exports.SECRET = "jwt-secret";
 
-exports.verifyToken = (req, res, next) => {
-  const h = req.headers.authorization;
-  if (!h) return res.sendStatus(403);
+exports.loginOfficial = async ({ email, accessKey }) => {
+  const official = memoryStore.officialSessions[email];
+  if (!official) throw new Error("Official not found");
+  if (official.accessKey !== accessKey) throw new Error("Invalid access key");
 
-  try {
-    req.user = jwt.verify(h.split(" ")[1], SECRET);
-    next();
-  } catch {
-    res.sendStatus(401);
-  }
-};
-
-exports.loginOfficial = ({ email, accessKey }) => {
-  const official = memoryStore.getOfficial(email);
-  if (!official || official.accessKey !== accessKey)
-    throw new Error("Invalid credentials");
-
-  return jwt.sign(
-    { email, department: official.department },
-    SECRET,
-    { expiresIn: "2h" }
-  );
+  const token = jwt.sign({ email, department: official.department }, exports.SECRET, { expiresIn: "2h" });
+  return token;
 };
 
 exports.verifyJWTToken = (token) => {
-  try { return jwt.verify(token, SECRET); }
-  catch { return null; }
+  try {
+    return jwt.verify(token, exports.SECRET);
+  } catch {
+    return null;
+  }
 };

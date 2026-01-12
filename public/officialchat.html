@@ -1,70 +1,44 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Citizen → Department Chat</title>
-  <style>
-    body { font-family: Arial; margin: 20px; }
-    .messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 5px; margin-bottom: 10px; }
-    select, input { padding: 5px; margin-bottom: 5px; width: 70%; }
-    button { padding: 5px 10px; }
-  </style>
-</head>
+<head><meta charset="UTF-8"><title>Official Chat</title></head>
 <body>
-  <h2>Citizen → Official Chat</h2>
-
-  <label for="departmentSelect">Select Department:</label><br>
-  <select id="departmentSelect">
-    <option value="HR">HR</option>
-    <option value="Finance">Finance</option>
-    <option value="IT">IT</option>
-    <option value="Support">Support</option>
-  </select><br>
-
-  <div class="messages" id="messages"></div>
-  <input id="msg" placeholder="Message to department...">
-  <button onclick="sendMessage()">Send</button>
+<h2>Official Chat</h2>
+<button onclick="logout()">Logout</button>
+<div id="messages" style="border:1px solid #ccc;height:300px;overflow:auto;"></div>
+<input id="msg" placeholder="Message..."><button onclick="sendMsg()">Send</button>
 
 <script src="js/crypto-js.js"></script>
 <script>
-let ws;
-const AES_KEY = "my_secret_key_123";
-let replyToken = Math.random().toString(36).substring(2,10);
+const JWT = localStorage.getItem("JWT_TOKEN");
+if(!JWT){ alert("Login first"); window.location.href="login.html"; }
 
-ws = new WebSocket(`ws://${location.host}`);
-ws.onopen = () => console.log("Connected to server");
+const AES_KEY="my_secret_key_123";
+let ws = new WebSocket(`ws://${location.host}?token=${JWT}`);
+let replyToken=null;
 
-ws.onmessage = (e) => {
+ws.onmessage = e=>{
   const msg = JSON.parse(e.data);
-  const messagesEl = document.getElementById("messages");
-
-  let text = msg.text;
-  try {
+  const div = document.getElementById("messages");
+  let text=msg.text;
+  try{
     const bytes = CryptoJS.AES.decrypt(msg.text, AES_KEY);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    if (decrypted) text = decrypted;
-  } catch {}
-
-  messagesEl.innerHTML += `[${msg.chatType}] ${text}<br>`;
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+    const dec = bytes.toString(CryptoJS.enc.Utf8);
+    if(dec) text=dec;
+  }catch{}
+  div.innerHTML+=`[${msg.department}] ${text}<br>`;
+  div.scrollTop=div.scrollHeight;
+  if(msg.replyToken) replyToken=msg.replyToken;
 };
 
-function sendMessage() {
-  const input = document.getElementById("msg");
-  const department = document.getElementById("departmentSelect").value;
-  if (!input.value) return;
-
-  const encrypted = CryptoJS.AES.encrypt(input.value, AES_KEY).toString();
-
-  ws.send(JSON.stringify({
-    chatType: "official",
-    text: encrypted,
-    department,
-    replyToken
-  }));
-
-  input.value = "";
+function sendMsg(){
+  const val = document.getElementById("msg").value;
+  if(!val || !replyToken) return;
+  const enc = CryptoJS.AES.encrypt(val, AES_KEY).toString();
+  ws.send(JSON.stringify({ chatType:"official", text:enc, replyToCitizenToken:replyToken }));
+  document.getElementById("msg").value="";
 }
+
+function logout(){ localStorage.removeItem("JWT_TOKEN"); window.location.href="login.html"; }
 </script>
 </body>
 </html>

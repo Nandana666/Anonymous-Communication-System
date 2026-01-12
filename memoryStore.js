@@ -3,57 +3,38 @@ const crypto = require("crypto");
 const memoryStore = {
   publicClients: new Set(),
   privateRooms: {},
-
-  // Approved officials
   officialSessions: {},
-
-  // Pending official signup requests
   pendingOfficials: {},
-
-  // Invite codes → email mapping
-  validInviteCodes: [],
-
-  citizenSessions: {}
+  citizenSessions: {},
+  validInviteCodes: []
 };
 
-const generateAccessKey = () => crypto.randomBytes(4).toString("hex");
-
-// Step 1: Official submits request
+// Add official signup request
 memoryStore.addOfficialRequest = ({ email, department }) => {
-  if (memoryStore.pendingOfficials[email])
-    throw new Error("Request already submitted");
+  if (!email || !department) throw new Error("Email and Department required");
+  if (memoryStore.pendingOfficials[email] || memoryStore.officialSessions[email])
+    throw new Error("Request already exists or official already approved");
 
   memoryStore.pendingOfficials[email] = { email, department };
 };
 
-// Step 2: Admin approves → invite code
+// Approve official → create accessKey
 memoryStore.approveOfficial = (email) => {
-  const req = memoryStore.pendingOfficials[email];
-  if (!req) throw new Error("Request not found");
+  const r = memoryStore.pendingOfficials[email];
+  if (!r) throw new Error("No such pending request");
 
-  const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-  memoryStore.validInviteCodes.push({ inviteCode, email });
-
+  const accessKey = crypto.randomBytes(4).toString("hex");
+  memoryStore.officialSessions[email] = { email: r.email, department: r.department, accessKey };
   delete memoryStore.pendingOfficials[email];
-  return inviteCode;
+  return accessKey;
 };
 
-// Step 3: Final signup
+// Create official (used by official signup after approval)
 memoryStore.createOfficial = ({ email, department, inviteCode }) => {
-  const valid = memoryStore.validInviteCodes.find(
-    i => i.inviteCode === inviteCode && i.email === email
-  );
-  if (!valid) throw new Error("Invalid invite code");
-
-  const accessKey = generateAccessKey();
-  memoryStore.officialSessions[email] = { email, department, accessKey };
-
-  memoryStore.validInviteCodes =
-    memoryStore.validInviteCodes.filter(i => i.inviteCode !== inviteCode);
-
-  return { email, department, accessKey };
+  const o = memoryStore.officialSessions[email];
+  if (!o) throw new Error("Official not approved yet by admin");
+  if (o.accessKey !== inviteCode) throw new Error("Invalid invite/access key");
+  return { email, department, accessKey: o.accessKey };
 };
-
-memoryStore.getOfficial = (email) => memoryStore.officialSessions[email];
 
 module.exports = memoryStore;

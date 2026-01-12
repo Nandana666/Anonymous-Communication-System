@@ -8,74 +8,77 @@ const jwtAuth = require("./jwtAuth");
 
 const app = express();
 
-// ✅ FIX CORS (YOUR ERROR)
-app.use((req,res,next)=>{
-  res.setHeader("Access-Control-Allow-Origin","*");
-  res.setHeader("Access-Control-Allow-Headers","Content-Type,Authorization");
-  res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");
-  if(req.method==="OPTIONS") return res.sendStatus(200);
-  next();
-});
-
+// ✅ Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ---------- OFFICIAL REQUEST ----------
-app.post("/api/official/request",(req,res)=>{
+app.post("/api/official/request", (req, res) => {
   try {
     memoryStore.addOfficialRequest(req.body);
-    res.json({message:"Request sent for admin approval"});
-  } catch(e) {
-    res.status(400).json({error:e.message});
+    res.json({ message: "Request sent for admin approval" });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 
-// ---------- FINAL SIGNUP ----------
-app.post("/api/signup",(req,res)=>{
+// ---------- LOGIN / SIGNUP ----------
+app.post("/api/signup", (req, res) => {
   try {
-    res.json(memoryStore.createOfficial(req.body));
-  } catch(e) {
-    res.status(400).json({error:e.message});
+    const official = memoryStore.createOfficial(req.body);
+    res.json(official);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 
-// ---------- LOGIN ----------
-app.post("/api/login",(req,res)=>{
+app.post("/api/login", async (req, res) => {
   try {
-    res.json({token: jwtAuth.loginOfficial(req.body)});
-  } catch(e) {
-    res.status(401).json({error:e.message});
+    const token = await jwtAuth.loginOfficial(req.body);
+    res.json({ token });
+  } catch (e) {
+    res.status(401).json({ error: e.message });
   }
 });
 
 // ---------- ADMIN ----------
-const ADMIN = { username:"admin", password:"Admin@123" };
+const ADMIN = { username: "admin", password: "Admin@123" };
 
-app.post("/api/admin/login",(req,res)=>{
-  if(req.body.username===ADMIN.username && req.body.password===ADMIN.password){
-    res.json({
-      token: jwt.sign({role:"admin"}, jwtAuth.SECRET)
-    });
-  } else res.sendStatus(401);
+app.post("/api/admin/login", (req, res) => {
+  const { username, password } = req.body;
+  if (username === ADMIN.username && password === ADMIN.password) {
+    const token = jwt.sign({ role: "admin" }, jwtAuth.SECRET);
+    res.json({ token });
+  } else res.status(401).json({ error: "Invalid credentials" });
 });
 
-const verifyAdmin = (req,res,next)=>{
+const verifyAdmin = (req, res, next) => {
   try {
     const d = jwt.verify(req.headers.authorization.split(" ")[1], jwtAuth.SECRET);
-    if(d.role!=="admin") throw "";
+    if (d.role !== "admin") throw "";
     next();
-  } catch { res.sendStatus(403); }
+  } catch {
+    res.sendStatus(403);
+  }
 };
 
-app.get("/api/admin/requests",verifyAdmin,(req,res)=>{
+// Admin fetch pending requests
+app.get("/api/admin/requests", verifyAdmin, (req, res) => {
   res.json(memoryStore.pendingOfficials);
 });
 
-app.post("/api/admin/approve",verifyAdmin,(req,res)=>{
+// Admin fetch approved officials
+app.get("/api/admin/approved", verifyAdmin, (req, res) => {
+  res.json(memoryStore.officialSessions);
+});
+
+// Approve official → generate invite/access key
+app.post("/api/admin/approve", verifyAdmin, (req, res) => {
   try {
-    res.json({inviteCode: memoryStore.approveOfficial(req.body.email)});
-  } catch(e){
-    res.status(400).json({error:e.message});
+    const inviteCode = memoryStore.approveOfficial(req.body.email);
+    res.json({ inviteCode });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 
@@ -83,4 +86,4 @@ app.post("/api/admin/approve",verifyAdmin,(req,res)=>{
 const server = http.createServer(app);
 require("./websocket")(server);
 
-server.listen(5000,()=>console.log("✅ Server running on http://localhost:5000"));
+server.listen(5000, () => console.log("✅ Server running at http://localhost:5000"));

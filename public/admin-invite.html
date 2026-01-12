@@ -1,86 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Invite & Approvals</title>
-  <style>
-    body{font-family:Arial;margin:20px;}
-    table{border-collapse:collapse;width:80%}
-    td,th{border:1px solid #ccc;padding:5px;text-align:left;}
-    button{padding:3px 8px;margin:2px;}
-  </style>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+<style>
+body{font-family:Arial;margin:20px;}table{border-collapse:collapse;width:90%;margin-bottom:30px;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f2f2f2;}button{padding:5px 10px;margin-right:5px;}#logout{margin-bottom:20px;}
+</style>
 </head>
 <body>
-<h2>Admin Panel – Invite & Approvals</h2>
-<button onclick="logout()">Logout</button>
+<h2>Admin Panel</h2>
+<button id="logout" onclick="logout()">Logout</button>
 
-<h3>Pending Requests</h3>
-<table>
+<h3>Pending Signup Requests</h3>
+<table id="pendingTable">
 <thead><tr><th>Email</th><th>Department</th><th>Action</th></tr></thead>
-<tbody id="pending"></tbody>
+<tbody></tbody>
 </table>
 
 <h3>Approved Officials</h3>
-<table>
+<table id="approvedTable">
 <thead><tr><th>Email</th><th>Department</th><th>Access Key</th></tr></thead>
-<tbody id="approved"></tbody>
+<tbody></tbody>
 </table>
 
 <script>
-const TOKEN = localStorage.getItem("ADMIN_JWT");
-if(!TOKEN) window.location.href="admin.html";
+const ADMIN_TOKEN=localStorage.getItem("ADMIN_TOKEN");
+if(!ADMIN_TOKEN){ alert("Please login first!"); window.location.href="admin.html"; }
 
-async function loadPending(){
-  const r = await fetch("http://localhost:5000/api/admin/requests",{
-    headers: { Authorization: "Bearer "+TOKEN }
-  });
-  const data = await r.json();
-  const tbody = document.getElementById("pending");
-  tbody.innerHTML = "";
-  for(const email in data){
-    const dep = data[email].department;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${email}</td><td>${dep}</td>
-      <td><button onclick="approve('${email}')">Approve</button></td>`;
-    tbody.appendChild(tr);
+function logout(){ localStorage.removeItem("ADMIN_TOKEN"); window.location.href="admin.html"; }
+
+async function fetchData(){
+  // pending
+  const pendingRes=await fetch("http://localhost:5000/api/admin/requests",{headers:{"Authorization":"Bearer "+ADMIN_TOKEN}});
+  const pending=await pendingRes.json();
+  const pendingTbody=document.querySelector("#pendingTable tbody"); pendingTbody.innerHTML="";
+  for(const email in pending){
+    const r=pending[email];
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r.email}</td><td>${r.department}</td><td><button onclick="approve('${r.email}')">Approve</button></td>`;
+    pendingTbody.appendChild(tr);
   }
-}
-
-async function loadApproved(){
-  const r = await fetch("http://localhost:5000/api/admin/approved",{
-    headers: { Authorization: "Bearer "+TOKEN }
-  });
-  const data = await r.json();
-  const tbody = document.getElementById("approved");
-  tbody.innerHTML = "";
-  for(const email in data){
-    const off = data[email];
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${off.email}</td><td>${off.department}</td><td>${off.accessKey}</td>`;
-    tbody.appendChild(tr);
+  // approved
+  const approvedRes=await fetch("http://localhost:5000/api/admin/approved",{headers:{"Authorization":"Bearer "+ADMIN_TOKEN}});
+  const approved=approvedRes.ok?await approvedRes.json():{};
+  const approvedTbody=document.querySelector("#approvedTable tbody"); approvedTbody.innerHTML="";
+  for(const email in approved){
+    const r=approved[email];
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r.email}</td><td>${r.department}</td><td>${r.accessKey}</td>`;
+    approvedTbody.appendChild(tr);
   }
 }
 
 async function approve(email){
-  const r = await fetch("http://localhost:5000/api/admin/approve",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json", Authorization: "Bearer "+TOKEN },
-    body: JSON.stringify({ email })
-  });
-  const data = await r.json();
-  alert(`Invite code generated for ${email}: ${data.inviteCode}`);
-  loadPending();
-  loadApproved();
+  const res=await fetch("http://localhost:5000/api/admin/approve",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+ADMIN_TOKEN},body:JSON.stringify({email})});
+  const data=await res.json();
+  alert(`Approved! Access Key: ${data.accessKey}`);
+  fetchData();
 }
 
-function logout(){
-  localStorage.removeItem("ADMIN_JWT");
-  window.location.href="admin.html";
-}
-
-// Initial load
-loadPending();
-loadApproved();
+fetchData();
 </script>
 </body>
 </html>

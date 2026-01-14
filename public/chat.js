@@ -5,7 +5,7 @@ let replyToken = null;
 let anonID = "";
 const AES_KEY = "my_secret_key_123"; // AES key for encrypt/decrypt
 
-// ------------------ UTIL ------------------
+// ------------------ UTILS ------------------
 function generateID() {
   return Math.random().toString(36).substring(2, 10);
 }
@@ -14,36 +14,41 @@ function generateRoomCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// ------------------ INIT ------------------
+// ------------------ INIT CHAT ------------------
 function initChat(type) {
   chatType = type;
-
   anonID = generateID();
+
+  // Display anonID
   const anonEl = document.getElementById("anonID");
   if (anonEl) anonEl.innerText = "ID: " + anonID;
 
-  // Rotate ID every 10 seconds
+  // Rotate anonID every 10 seconds
   setInterval(() => {
     anonID = generateID();
     if (anonEl) anonEl.innerText = "ID: " + anonID;
   }, 10000);
 
-  const tokenEl = document.getElementById("replyToken");
+  // Official chat: generate reply token
   if (type === "official") {
     replyToken = generateID();
+    const tokenEl = document.getElementById("replyToken");
     if (tokenEl) {
       tokenEl.style.display = "inline";
       tokenEl.innerText = "Reply Token: " + replyToken;
     }
-  } else if (tokenEl) {
-    tokenEl.style.display = "none";
+  } else {
+    const tokenEl = document.getElementById("replyToken");
+    if (tokenEl) tokenEl.style.display = "none";
   }
 
+  // Private chat: show room status
   if (type === "private") {
     const roomStatus = document.getElementById("roomStatus");
     if (roomStatus) roomStatus.innerText = "No room joined";
   }
 
+  // Connect WebSocket
   ws = new WebSocket("ws://localhost:5000");
 
   ws.onopen = () => {
@@ -58,20 +63,18 @@ function initChat(type) {
       const data = JSON.parse(e.data);
       if (!data.message) return;
 
-      const decrypted = CryptoJS.AES.decrypt(
-        data.message,
-        AES_KEY
-      ).toString(CryptoJS.enc.Utf8);
-
-      addMessage(data.sender, decrypted, data.chatType);
+      const decrypted = CryptoJS.AES.decrypt(data.message, AES_KEY).toString(CryptoJS.enc.Utf8);
+      displayMessage(data.sender, decrypted, data.chatType);
     } catch (err) {
       console.error("Invalid message:", e.data);
     }
   };
+
+  ws.onclose = () => console.log("⚠ WebSocket disconnected");
 }
 
-// ------------------ UI ------------------
-function addMessage(sender, msg, type) {
+// ------------------ DISPLAY MESSAGE ------------------
+function displayMessage(sender, msg, type) {
   let boxId = "publicMessages";
   if (type === "private") boxId = "privateMessages";
   if (type === "official") boxId = "officialMessages";
@@ -80,20 +83,14 @@ function addMessage(sender, msg, type) {
   if (!box) return;
 
   const div = document.createElement("div");
+  div.className = sender === anonID ? "msg you" : "msg other";
 
-  if (sender === anonID) {
-    div.className = "msg you";
-    div.innerText = `You: ${msg}`;
-  } else {
-    div.className = "msg other";
-    div.innerText = `${sender}: ${msg}`;
-  }
-
+  div.innerHTML = `<span class="anon">${sender === anonID ? "You" : sender}:</span> ${msg}`;
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
 }
 
-// ------------------ SEND ------------------
+// ------------------ SEND MESSAGE ------------------
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const message = input.value.trim();
@@ -107,7 +104,7 @@ function sendMessage() {
     chatType
   };
 
-  if (chatType === "private") payload.room = room;
+  if (chatType === "private" && room) payload.room = room;
   if (chatType === "official") payload.replyToken = replyToken;
 
   if (ws.readyState === WebSocket.OPEN) {
@@ -120,13 +117,10 @@ function sendMessage() {
 }
 
 // ------------------ PRIVATE CHAT ------------------
-
-// Create random room
 function createRoom() {
   if (chatType !== "private") return;
 
   room = generateRoomCode();
-
   const roomStatus = document.getElementById("roomStatus");
   if (roomStatus) roomStatus.innerText = "Room Code: " + room;
 
@@ -135,8 +129,9 @@ function createRoom() {
   }
 }
 
-// Join existing room
 function joinRoom() {
+  if (chatType !== "private") return;
+
   room = document.getElementById("roomInput").value.trim().toUpperCase();
   if (!room) return alert("Enter room code");
 

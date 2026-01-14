@@ -1,42 +1,151 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Official Signup</title>
-  <style>
-    body { font-family: Arial; margin: 20px; }
-    input, select, button { padding: 8px; margin: 6px 0; width: 300px; }
-    #popup {
-      display: none;
-      border: 2px solid green;
-      padding: 15px;
-      margin-top: 20px;
-      background: #eaffea;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Official Signup</title>
+<style>
+/* Body & Background */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+/* Card Container */
+.signup-card {
+  background: #fff;
+  padding: 40px 30px;
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  width: 360px;
+  text-align: center;
+  animation: fadeIn 0.8s ease;
+}
+
+/* Headings */
+.signup-card h2 {
+  color: #333;
+  margin-bottom: 25px;
+}
+
+/* Inputs & Selects */
+.signup-card input, .signup-card select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.signup-card input:focus, .signup-card select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 5px rgba(102,126,234,0.5);
+  outline: none;
+}
+
+/* Buttons */
+.signup-card button {
+  width: 48%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 5px 1%;
+  transition: all 0.3s ease;
+}
+
+.signup-card button:hover {
+  background: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Message Text */
+#msg {
+  margin-top: 10px;
+  color: #e53e3e;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* Popup */
+#popup {
+  display: none;
+  background: #eaffea;
+  border: 2px solid #48bb78;
+  padding: 20px;
+  border-radius: 16px;
+  margin-top: 20px;
+  text-align: center;
+  animation: fadeIn 0.5s ease;
+}
+
+#popup h3 {
+  color: #2f855a;
+  margin-bottom: 10px;
+}
+
+#popup input {
+  width: 80%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid #48bb78;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Copy Button */
+#popup button {
+  width: 50%;
+  background: #48bb78;
+}
+
+#popup button:hover {
+  background: #38a169;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(-20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+</style>
 </head>
 <body>
 
-<h2>Official Signup Request</h2>
+<div class="signup-card">
+  <h2>Official Signup Request</h2>
 
-<input id="email" placeholder="Official Email"><br>
+  <input id="email" placeholder="Official Email">
+  <select id="department">
+    <option value="HR">HR</option>
+    <option value="IT">IT</option>
+    <option value="Finance">Finance</option>
+  </select>
 
-<select id="department">
-  <option value="HR">HR</option>
-  <option value="IT">IT</option>
-  <option value="Finance">Finance</option>
-</select><br>
+  <div>
+    <button onclick="requestSignup()">Submit Request</button>
+    <button onclick="checkStatus()">Check Approval</button>
+  </div>
 
-<button onclick="requestSignup()">Submit Request</button>
-<button onclick="checkStatus()">Check Approval</button>
+  <div id="msg"></div>
 
-<div id="msg"></div>
-
-<div id="popup">
-  <h3>Approved ✅</h3>
-  <p><b>Access Key:</b></p>
-  <input id="accessKey" readonly>
-  <button onclick="copyKey()">Copy</button>
+  <div id="popup">
+    <h3>Approved ✅</h3>
+    <p><b>Access Key:</b></p>
+    <input id="accessKey" readonly>
+    <button onclick="copyKey()">Copy</button>
+  </div>
 </div>
 
 <script>
@@ -47,28 +156,27 @@ async function requestSignup(){
   const department = document.getElementById("department").value;
   const msg = document.getElementById("msg");
 
-  const res = await fetch(API + "/api/official/request", {
-    method: "POST",
-    headers: { "Content-Type":"application/json" },
-    body: JSON.stringify({ email, department })
-  });
-
-  const data = await res.json();
-  msg.innerText = data.message || data.error;
+  try{
+    const res = await fetch(API + "/api/official/request", {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ email, department })
+    });
+    const data = await res.json();
+    msg.innerText = data.message || data.error;
+  }catch(e){ msg.innerText = e.message; }
 }
 
 async function checkStatus(){
   const email = emailEl();
-  const res = await fetch(API + "/api/official/status?email=" + email);
-  const data = await res.json();
+  try{
+    const res = await fetch(API + "/api/official/status?email=" + email);
+    const data = await res.json();
+    if (!data.approved) { alert("Not approved yet"); return; }
 
-  if (!data.approved) {
-    alert("Not approved yet");
-    return;
-  }
-
-  document.getElementById("popup").style.display = "block";
-  document.getElementById("accessKey").value = data.accessKey;
+    document.getElementById("popup").style.display = "block";
+    document.getElementById("accessKey").value = data.accessKey;
+  }catch(e){ alert(e.message); }
 }
 
 function copyKey(){
@@ -78,9 +186,7 @@ function copyKey(){
   alert("Access Key Copied!");
 }
 
-function emailEl(){
-  return document.getElementById("email").value;
-}
+function emailEl(){ return document.getElementById("email").value; }
 </script>
 
 </body>

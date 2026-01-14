@@ -1,44 +1,32 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>Official Chat</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Citizen → Official Chat</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
 <body>
-<h2>Official Chat</h2>
-<button onclick="logout()">Logout</button>
-<div id="messages" style="border:1px solid #ccc;height:300px;overflow:auto;"></div>
-<input id="msg" placeholder="Message..."><button onclick="sendMsg()">Send</button>
+
+<div class="chat-header">
+  <h2>Citizen → Official Chat</h2>
+  <span id="anonID"></span>
+  <button onclick="logout()">Exit</button>
+</div>
+
+<div class="chat-container">
+  <div class="messages" id="officialMessages"></div>
+  <div class="input-area">
+    <input id="messageInput" placeholder="Message an official..." autofocus>
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
 
 <script src="js/crypto-js.js"></script>
+<script src="chat.js"></script>
 <script>
-const JWT = localStorage.getItem("JWT_TOKEN");
-if(!JWT){ alert("Login first"); window.location.href="login.html"; }
-
-const AES_KEY="my_secret_key_123";
-let ws = new WebSocket(`ws://${location.host}?token=${JWT}`);
-let replyToken=null;
-
-ws.onmessage = e=>{
-  const msg = JSON.parse(e.data);
-  const div = document.getElementById("messages");
-  let text=msg.text;
-  try{
-    const bytes = CryptoJS.AES.decrypt(msg.text, AES_KEY);
-    const dec = bytes.toString(CryptoJS.enc.Utf8);
-    if(dec) text=dec;
-  }catch{}
-  div.innerHTML+=`[${msg.department}] ${text}<br>`;
-  div.scrollTop=div.scrollHeight;
-  if(msg.replyToken) replyToken=msg.replyToken;
-};
-
-function sendMsg(){
-  const val = document.getElementById("msg").value;
-  if(!val || !replyToken) return;
-  const enc = CryptoJS.AES.encrypt(val, AES_KEY).toString();
-  ws.send(JSON.stringify({ chatType:"official", text:enc, replyToCitizenToken:replyToken }));
-  document.getElementById("msg").value="";
-}
-
-function logout(){ localStorage.removeItem("JWT_TOKEN"); window.location.href="login.html"; }
+  // Initialize as official chat type
+  initChat("official");
 </script>
+
 </body>
 </html>

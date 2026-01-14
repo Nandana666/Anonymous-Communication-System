@@ -1,31 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Official Login</title>
-  <style>
-    body { font-family: Arial; margin: 20px; }
-    input { padding: 5px; width: 70%; margin-bottom: 10px; }
-    button { padding: 5px 10px; }
-    .message { margin-top: 10px; color: red; }
-    .link { margin-top: 15px; }
-    a { color: #0066cc; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
+<meta charset="UTF-8">
+<title>Official Login</title>
+
+<style>
+/* Background */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+/* Login Card */
+.login-card {
+  background: #fff;
+  padding: 40px 30px;
+  border-radius: 20px;
+  width: 360px;
+  text-align: center;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+  animation: fadeIn 0.8s ease;
+}
+
+.login-card h2 {
+  margin-bottom: 25px;
+  color: #333;
+}
+
+/* Inputs */
+.login-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.login-card input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 6px rgba(102,126,234,0.5);
+  outline: none;
+}
+
+/* Button */
+.login-card button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.login-card button:hover {
+  background: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+/* Message */
+.message {
+  margin-top: 15px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Signup Link */
+.link {
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.link a {
+  color: #667eea;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link a:hover {
+  text-decoration: underline;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
 </head>
+
 <body>
+
+<div class="login-card">
   <h2>Official Login</h2>
 
-  <input id="email" placeholder="Email"><br>
-  <input id="accessKey" placeholder="Access Key"><br>
+  <input id="email" placeholder="Official Email">
+  <input id="accessKey" placeholder="Access Key">
+
   <button onclick="login()">Login</button>
 
   <div class="message" id="msg"></div>
 
-  <!-- ✅ Signup option -->
   <div class="link">
-    New official? <a href="signup.html">Request Signup / Register here</a>
+    New official?
+    <a href="signup.html">Request Signup / Register here</a>
   </div>
+</div>
 
 <script>
 async function login(){
@@ -34,6 +124,7 @@ async function login(){
   const msgEl = document.getElementById("msg");
 
   if(!email || !accessKey){
+    msgEl.style.color = "red";
     msgEl.innerText = "All fields required";
     return;
   }
@@ -56,10 +147,12 @@ async function login(){
       msgEl.style.color = "red";
       msgEl.innerText = data.error;
     }
-  }catch(e){
+  } catch(e){
+    msgEl.style.color = "red";
     msgEl.innerText = e.message;
   }
 }
 </script>
+
 </body>
 </html>

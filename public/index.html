@@ -1,19 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Anonymous Communication System</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <div class="index-container">
-    <h2>Anonymous Communication System</h2>
-    <a href="admin.html">Admin Panel</a><br>
 
-    <a href="public.html">Public Chat</a><br>
-    <a href="private.html">Private Chat</a><br>
-    <a href="officialchat.html">Citizen → Official Chat</a><br>
-    <a href="login.html">Official Login</a>
-  </div>
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-content">
+      <h1 class="animate">Anonymous Communication System</h1>
+      <p class="subtitle animate">Connect securely, communicate privately, and maintain anonymity.</p>
+      <div class="hero-buttons">
+        <a href="public.html" class="animate"><i class="fas fa-users"></i> Public Chat</a>
+        <a href="private.html" class="animate"><i class="fas fa-user-friends"></i> Private Chat</a>
+        <a href="officialchat.html" class="animate"><i class="fas fa-handshake"></i> Citizen → Official Chat</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features Section -->
+  <section class="features">
+    <h2 class="animate">Why Use Our System?</h2>
+    <div class="feature-cards">
+      <div class="card animate">
+        <i class="fas fa-shield-alt"></i>
+        <h3>Secure</h3>
+        <p>All communication is encrypted to ensure your privacy and safety.</p>
+      </div>
+      <div class="card animate">
+        <i class="fas fa-user-secret"></i>
+        <h3>Anonymous</h3>
+        <p>Participate in chats without revealing your personal identity.</p>
+      </div>
+      <div class="card animate">
+        <i class="fas fa-bolt"></i>
+        <h3>Fast</h3>
+        <p>Instant messaging with zero delays for smooth conversations.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Official Login Section -->
+  <section class="login-section">
+    <h2 class="animate">Official Access</h2>
+    <a href="login.html" class="login-btn animate"><i class="fas fa-sign-in-alt"></i> Official Login</a>
+    <a href="admin.html" class="login-btn animate"><i class="fas fa-user-shield"></i> Admin Panel</a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2026 Anonymous Communication System. All rights reserved.</p>
+  </footer>
+
+  <!-- Scroll Animation Script -->
+  <script>
+    const animElements = document.querySelectorAll('.animate');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('active');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.2
+    });
+
+    animElements.forEach(el => observer.observe(el));
+  </script>
+
 </body>
 </html>

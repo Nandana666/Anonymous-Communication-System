@@ -1,46 +1,348 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #f0f2f5;
+/* Reset & Body */
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
+body, html {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* Hero Section */
+.hero {
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  text-align: center;
+  padding: 0 20px;
+}
+
+.hero h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+.subtitle {
+  font-size: 18px;
+  margin-bottom: 30px;
+  font-style: italic;
+}
+
+.hero-buttons a {
+  text-decoration: none;
+  color: #fff;
+  background: #5a67d8;
+  padding: 15px 25px;
+  border-radius: 12px;
+  margin: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.hero-buttons a:hover {
+  background: #4c51bf;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Features Section */
+.features {
+  padding: 80px 20px;
+  text-align: center;
+  background: #f9f9f9;
+}
+
+.features h2 {
+  font-size: 32px;
+  margin-bottom: 50px;
+  color: #333;
+}
+
+.feature-cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+
+.card {
+  background: #fff;
+  padding: 30px 20px;
+  border-radius: 20px;
+  width: 250px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card i {
+  font-size: 36px;
+  color: #667eea;
+  margin-bottom: 20px;
+}
+
+.card h3 {
+  margin-bottom: 15px;
+  font-size: 22px;
+  color: #333;
+}
+
+.card p {
+  color: #555;
+  font-size: 14px;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+/* Login Section */
+.login-section {
+  padding: 60px 20px;
+  text-align: center;
+  background: #667eea;
+  color: #fff;
+}
+
+.login-section h2 {
+  font-size: 28px;
+  margin-bottom: 30px;
+}
+
+.login-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #5a67d8;
+  color: #fff;
+  padding: 15px 25px;
+  margin: 10px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+  background: #4c51bf;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 30px 20px;
+  background: #333;
+  color: #fff;
+}
+
+/* Scroll Animations */
+.animate {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 0.7s ease-out;
+}
+
+.animate.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .feature-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+}
+
+
+/* =======================
+   General Chat Page Styles
+   ======================= */
+
+/* Chat Header */
 .chat-header {
-  background: #007bff;
-  color: white;
-  padding: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: #667eea;
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 0 0 15px 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
+.chat-header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+#anonID {
+  font-style: italic;
+  font-size: 14px;
+  margin-left: 10px;
+  opacity: 0.8;
+}
+
+.chat-header button {
+  background: #5a67d8;
+  color: #fff;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.chat-header button:hover {
+  background: #4c51bf;
+  transform: translateY(-2px);
+}
+
+/* Chat Container */
 .chat-container {
-  padding: 10px;
-}
-
-.messages {
-  border: 1px solid #ccc;
-  height: 400px;
-  overflow-y: auto;
-  padding: 5px;
-  background: white;
-}
-
-.input-area {
-  margin-top: 10px;
+  max-width: 800px;
+  margin: 40px auto;
   display: flex;
+  flex-direction: column;
+  height: 70vh;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  background: #f9f9f9;
+}
+
+/* Messages area */
+.messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Individual message bubble */
+.message {
+  max-width: 70%;
+  padding: 12px 18px;
+  border-radius: 15px;
+  background: #667eea;
+  color: #fff;
+  word-wrap: break-word;
+  animation: fadeIn 0.5s ease;
+}
+
+.message.own {
+  align-self: flex-end;
+  background: #5a67d8;
+}
+
+.message span.anon {
+  font-size: 12px;
+  opacity: 0.7;
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Input Area */
+.input-area {
+  display: flex;
+  gap: 10px;
+  padding: 15px 20px;
+  background: #fff;
+  border-top: 1px solid #ddd;
 }
 
 .input-area input {
   flex: 1;
-  padding: 5px;
+  padding: 12px 15px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.input-area input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 5px rgba(102, 126, 234, 0.5);
 }
 
 .input-area button {
-  padding: 5px 10px;
-  margin-left: 5px;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.msg {
-  margin-bottom: 5px;
+.input-area button:hover {
+  background: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Scrollbar Styling */
+.messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+.messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+  background: #667eea;
+  border-radius: 10px;
+}
+
+/* Fade in animation for messages */
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(10px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .chat-container {
+    height: 65vh;
+    margin: 20px;
+  }
+
+  .chat-header h2 {
+    font-size: 20px;
+  }
+
+  .input-area input {
+    font-size: 14px;
+  }
+
+  .input-area button {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
 }

@@ -1,65 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Admin Panel</title>
+<link rel="stylesheet" href="styles.css">
 <style>
-body{font-family:Arial;margin:20px;}table{border-collapse:collapse;width:90%;margin-bottom:30px;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f2f2f2;}button{padding:5px 10px;margin-right:5px;}#logout{margin-bottom:20px;}
+/* Admin Panel Styles */
+.admin-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+}
+
+.admin-container h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+#logout {
+  background: #667eea;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+#logout:hover {
+  background: #5a67d8;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 40px;
+}
+
+th, td {
+  text-align: left;
+  padding: 12px 15px;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background: #667eea;
+  color: #fff;
+  font-weight: 600;
+}
+
+tr:hover {
+  background: #f2f2f2;
+}
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+}
+
+button.approve {
+  background: #48bb78;
+  color: #fff;
+}
+
+button.approve:hover {
+  background: #38a169;
+}
 </style>
 </head>
 <body>
-<h2>Admin Panel</h2>
-<button id="logout" onclick="logout()">Logout</button>
+<div class="admin-container">
+  <h2>Admin Panel</h2>
+  <button id="logout" onclick="logout()">Logout</button>
 
-<h3>Pending Signup Requests</h3>
-<table id="pendingTable">
-<thead><tr><th>Email</th><th>Department</th><th>Action</th></tr></thead>
-<tbody></tbody>
-</table>
+  <h3>Pending Signup Requests</h3>
+  <table id="pendingTable">
+    <thead><tr><th>Email</th><th>Department</th><th>Action</th></tr></thead>
+    <tbody></tbody>
+  </table>
 
-<h3>Approved Officials</h3>
-<table id="approvedTable">
-<thead><tr><th>Email</th><th>Department</th><th>Access Key</th></tr></thead>
-<tbody></tbody>
-</table>
+  <h3>Approved Officials</h3>
+  <table id="approvedTable">
+    <thead><tr><th>Email</th><th>Department</th><th>Access Key</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
 
 <script>
-const ADMIN_TOKEN=localStorage.getItem("ADMIN_TOKEN");
-if(!ADMIN_TOKEN){ alert("Please login first!"); window.location.href="admin.html"; }
+const ADMIN_TOKEN = localStorage.getItem("ADMIN_TOKEN");
+if (!ADMIN_TOKEN) { 
+  alert("Please login first!"); 
+  window.location.href = "admin.html"; 
+}
 
-function logout(){ localStorage.removeItem("ADMIN_TOKEN"); window.location.href="admin.html"; }
+function logout() {
+  localStorage.removeItem("ADMIN_TOKEN");
+  window.location.href = "admin.html";
+}
 
-async function fetchData(){
-  // pending
-  const pendingRes=await fetch("http://localhost:5000/api/admin/requests",{headers:{"Authorization":"Bearer "+ADMIN_TOKEN}});
-  const pending=await pendingRes.json();
-  const pendingTbody=document.querySelector("#pendingTable tbody"); pendingTbody.innerHTML="";
-  for(const email in pending){
-    const r=pending[email];
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${r.email}</td><td>${r.department}</td><td><button onclick="approve('${r.email}')">Approve</button></td>`;
+const pendingTbody = document.querySelector("#pendingTable tbody");
+const approvedTbody = document.querySelector("#approvedTable tbody");
+
+// ---------------- Real-Time Admin Dashboard ----------------
+const ws = new WebSocket(`ws://${location.host}/admin?token=${ADMIN_TOKEN}`);
+
+ws.onopen = () => console.log("✅ Admin WebSocket connected");
+
+ws.onmessage = e => {
+  try {
+    const data = JSON.parse(e.data);
+    if (data.type === "pendingUpdate") {
+      updatePendingTable(data.pending);
+    } else if (data.type === "approvedUpdate") {
+      updateApprovedTable(data.approved);
+    }
+  } catch(err) {
+    console.error("Invalid WS message:", e.data);
+  }
+};
+
+ws.onclose = () => console.log("⚠ Admin WebSocket disconnected");
+
+// ---------------- Functions to Update Tables ----------------
+function updatePendingTable(pending) {
+  pendingTbody.innerHTML = "";
+  for (const email in pending) {
+    const r = pending[email];
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.email}</td><td>${r.department}</td>
+      <td><button class="approve" onclick="approve('${r.email}')">Approve</button></td>`;
     pendingTbody.appendChild(tr);
   }
-  // approved
-  const approvedRes=await fetch("http://localhost:5000/api/admin/approved",{headers:{"Authorization":"Bearer "+ADMIN_TOKEN}});
-  const approved=approvedRes.ok?await approvedRes.json():{};
-  const approvedTbody=document.querySelector("#approvedTable tbody"); approvedTbody.innerHTML="";
-  for(const email in approved){
-    const r=approved[email];
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${r.email}</td><td>${r.department}</td><td>${r.accessKey}</td>`;
+}
+
+function updateApprovedTable(approved) {
+  approvedTbody.innerHTML = "";
+  for (const email in approved) {
+    const r = approved[email];
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${r.email}</td><td>${r.department}</td><td>${r.accessKey}</td>`;
     approvedTbody.appendChild(tr);
   }
 }
 
-async function approve(email){
-  const res=await fetch("http://localhost:5000/api/admin/approve",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+ADMIN_TOKEN},body:JSON.stringify({email})});
-  const data=await res.json();
+// ---------------- Approve Action ----------------
+async function approve(email) {
+  const res = await fetch("http://localhost:5000/api/admin/approve", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + ADMIN_TOKEN
+    },
+    body: JSON.stringify({ email })
+  });
+  const data = await res.json();
   alert(`Approved! Access Key: ${data.accessKey}`);
-  fetchData();
+  // Notify server to broadcast update
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: "approved", email }));
+  }
 }
 
-fetchData();
+// Initial fetch to populate tables on page load
+(async function initTables(){
+  const pendingRes = await fetch("http://localhost:5000/api/admin/requests", { headers: { "Authorization": "Bearer " + ADMIN_TOKEN }});
+  const pending = await pendingRes.json();
+  updatePendingTable(pending);
+
+  const approvedRes = await fetch("http://localhost:5000/api/admin/approved", { headers: { "Authorization": "Bearer " + ADMIN_TOKEN }});
+  const approved = approvedRes.ok ? await approvedRes.json() : {};
+  updateApprovedTable(approved);
+})();
 </script>
 </body>
 </html>

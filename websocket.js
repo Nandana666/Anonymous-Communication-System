@@ -8,6 +8,15 @@ module.exports = (server) => {
   wss.on("connection", (ws, req) => {
     console.log("✅ New WebSocket connected");
 
+    /* =====================================================
+       🔒 IP ANONYMITY GUARANTEE
+       -----------------------------------------------------
+       - Do NOT access req.socket.remoteAddress
+       - Do NOT access ws._socket.remoteAddress
+       - Do NOT read X-Forwarded-For headers
+       - All identification is token / session based only
+       ===================================================== */
+
     // ---------------- PARSE QUERY PARAMS ----------------
     const params = new URLSearchParams(req.url.split("?")[1]);
     const token = params.get("token");
@@ -17,16 +26,26 @@ module.exports = (server) => {
     if (adminMode && token) {
       const admin = jwtAuth.verifyAdminJWT(token);
       if (!admin) {
-        ws.close(1008, "Unauthorized"); // Close if invalid
+        ws.close(1008, "Unauthorized");
         return;
       }
       ws.isAdmin = true;
       console.log("Admin connected");
       memoryStore.adminClients.add(ws);
 
-      // Send initial data
-      ws.send(JSON.stringify({ type: "pendingUpdate", pending: memoryStore.pendingOfficials }));
-      ws.send(JSON.stringify({ type: "approvedUpdate", approved: memoryStore.officialSessions }));
+      // Initial admin data
+      ws.send(
+        JSON.stringify({
+          type: "pendingUpdate",
+          pending: memoryStore.pendingOfficials
+        })
+      );
+      ws.send(
+        JSON.stringify({
+          type: "approvedUpdate",
+          approved: memoryStore.officialSessions
+        })
+      );
     }
 
     // ---------------- OFFICIAL ----------------
@@ -45,15 +64,25 @@ module.exports = (server) => {
     // ---------------- MESSAGE HANDLING ----------------
     ws.on("message", (raw) => {
       let msg;
-      try { msg = JSON.parse(raw); } catch { return; }
+      try {
+        msg = JSON.parse(raw);
+      } catch {
+        return;
+      }
 
       const broadcast = (set) => {
         if (!set) return;
-        set.forEach(c => { if (c.readyState === WebSocket.OPEN) c.send(JSON.stringify(msg)); });
+        set.forEach((c) => {
+          if (c.readyState === WebSocket.OPEN) {
+            c.send(JSON.stringify(msg));
+          }
+        });
       };
 
       // ---------------- PUBLIC ----------------
-      if (msg.chatType === "public") broadcast(memoryStore.publicClients);
+      if (msg.chatType === "public") {
+        broadcast(memoryStore.publicClients);
+      }
 
       // ---------------- PRIVATE ----------------
       if (msg.chatType === "private" && msg.room) {
@@ -63,23 +92,42 @@ module.exports = (server) => {
       }
 
       // ---------------- CITIZEN → OFFICIAL ----------------
-      if (msg.chatType === "official" && msg.department && msg.replyToken && !ws.isOfficial) {
+      if (
+        msg.chatType === "official" &&
+        msg.department &&
+        msg.replyToken &&
+        !ws.isOfficial
+      ) {
         memoryStore.citizenSessions[msg.replyToken] = ws;
-        const depSet = memoryStore.ensureDepartmentSession(msg.department, msg.replyToken);
+        const depSet = memoryStore.ensureDepartmentSession(
+          msg.department,
+          msg.replyToken
+        );
         broadcast(depSet);
-        console.log(`Citizen message sent to ${msg.department} with token ${msg.replyToken}`);
+
+        console.log(
+          `Citizen message sent to ${msg.department} with token ${msg.replyToken}`
+        );
       }
 
       // ---------------- OFFICIAL → CITIZEN ----------------
-      if (msg.chatType === "official" && msg.replyToCitizenToken && ws.isOfficial) {
-        const citizenWS = memoryStore.citizenSessions[msg.replyToCitizenToken];
+      if (
+        msg.chatType === "official" &&
+        msg.replyToCitizenToken &&
+        ws.isOfficial
+      ) {
+        const citizenWS =
+          memoryStore.citizenSessions[msg.replyToCitizenToken];
+
         if (citizenWS && citizenWS.readyState === WebSocket.OPEN) {
-          citizenWS.send(JSON.stringify({
-            chatType: "official",
-            text: msg.text,
-            department: ws.user.department,
-            replyToken: msg.replyToCitizenToken
-          }));
+          citizenWS.send(
+            JSON.stringify({
+              chatType: "official",
+              text: msg.text,
+              department: ws.user.department,
+              replyToken: msg.replyToCitizenToken
+            })
+          );
         }
       }
 
@@ -91,19 +139,26 @@ module.exports = (server) => {
 
       // ---------------- REGISTER OFFICIAL ----------------
       if (msg.type === "registerOfficial" && ws.isOfficial && msg.replyToken) {
-        const deptSet = memoryStore.ensureDepartmentSession(ws.user.department, msg.replyToken);
+        const deptSet = memoryStore.ensureDepartmentSession(
+          ws.user.department,
+          msg.replyToken
+        );
         deptSet.add(ws);
       }
 
       // ---------------- ADMIN UPDATES ----------------
       if (ws.isAdmin && msg.type === "approved" && msg.email) {
-        // Broadcast updated lists to all admins
         const pending = memoryStore.pendingOfficials;
         const approved = memoryStore.officialSessions;
-        memoryStore.adminClients.forEach(adminWs => {
+
+        memoryStore.adminClients.forEach((adminWs) => {
           if (adminWs.readyState === WebSocket.OPEN) {
-            adminWs.send(JSON.stringify({ type: "pendingUpdate", pending }));
-            adminWs.send(JSON.stringify({ type: "approvedUpdate", approved }));
+            adminWs.send(
+              JSON.stringify({ type: "pendingUpdate", pending })
+            );
+            adminWs.send(
+              JSON.stringify({ type: "approvedUpdate", approved })
+            );
           }
         });
       }
@@ -116,13 +171,16 @@ module.exports = (server) => {
       memoryStore.publicClients.delete(ws);
       memoryStore.adminClients.delete(ws);
 
-      Object.values(memoryStore.privateRooms).forEach(s => s.delete(ws));
-      Object.values(memoryStore.departmentSessions).forEach(dep => {
-        Object.values(dep).forEach(s => s.delete(ws));
+      Object.values(memoryStore.privateRooms).forEach((s) => s.delete(ws));
+
+      Object.values(memoryStore.departmentSessions).forEach((dep) => {
+        Object.values(dep).forEach((s) => s.delete(ws));
       });
 
       for (const token in memoryStore.citizenSessions) {
-        if (memoryStore.citizenSessions[token] === ws) delete memoryStore.citizenSessions[token];
+        if (memoryStore.citizenSessions[token] === ws) {
+          delete memoryStore.citizenSessions[token];
+        }
       }
     });
   });

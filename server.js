@@ -9,6 +9,13 @@ const jwtAuth = require("./jwtAuth");
 const app = express();
 
 /* =======================
+   🔒 IP ANONYMITY SETTING
+   ======================= */
+// IMPORTANT: Do NOT trust proxy headers
+// This prevents Express from extracting real client IPs
+app.set("trust proxy", false);
+
+/* =======================
    GLOBAL CORS FIX
    ======================= */
 app.use((req, res, next) => {

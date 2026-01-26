@@ -1,36 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Private Chat</title>
-  <link rel="stylesheet" href="styles.css">
+    <title>Private Chat</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="chat-header">
-  <h2>Private Chat</h2>
-  <span id="anonID"></span>
-  <span id="roomCode" style="margin-left:15px;"></span>
-  <!-- <button onclick="createRoom()">Create Room</button> -->
-  <button onclick="logout()">Logout</button>
-</div>
 
+    <h2>Private Chat</h2>
 
-<div class="chat-container">
-  <div class="room-box">
-  <input id="roomInput" placeholder="Enter Room Code">
-  <button onclick="joinRoom()">Join</button>
-  <button onclick="createRoom()">Create Room</button>
-  <span id="roomStatus"></span>
-</div>
+    <div style="background:#111; color:#00ff99; padding:10px; text-align:center;">
+        Your Anonymous ID: <span id="anonId"></span>
+    </div>
 
+    <input type="text" id="roomInput" placeholder="Enter Room ID">
+    <button onclick="joinPrivateRoom()">Join Room</button>
 
-  <div class="messages" id="privateMessages"></div>
-  <div class="input-area">
-    <input id="messageInput" placeholder="Private message...">
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
-<script src="js/crypto-js.js"></script>
-<script src="chat.js"></script>
-<script>initChat("private");</script>
+    <div id="messages" class="chat-box"></div>
+
+    <input type="text" id="privateMessageInput" placeholder="Type private message">
+    <button onclick="sendPrivateMessage()">Send</button>
+
+    <script src="chat.js"></script>
 </body>
 </html>

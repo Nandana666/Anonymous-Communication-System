@@ -1,150 +1,102 @@
-let ws;
-let chatType;
-let room = null;
-let replyToken = null;
-let anonID = "";
-const AES_KEY = "my_secret_key_123"; // AES key for encrypt/decrypt
+document.addEventListener("DOMContentLoaded", () => {
 
-// ------------------ UTILS ------------------
-function generateID() {
-  return Math.random().toString(36).substring(2, 10);
-}
+    // =============================
+    // 🔐 Anonymous ID Generator
+    // =============================
 
-function generateRoomCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
+    function generateAnonymousId() {
+        const array = new Uint8Array(8);
+        crypto.getRandomValues(array);
 
-// ------------------ INIT CHAT ------------------
-function initChat(type) {
-  chatType = type;
-  anonID = generateID();
-
-  // Display anonID
-  const anonEl = document.getElementById("anonID");
-  if (anonEl) anonEl.innerText = "ID: " + anonID;
-
-  // Rotate anonID every 10 seconds
-  setInterval(() => {
-    anonID = generateID();
-    if (anonEl) anonEl.innerText = "ID: " + anonID;
-  }, 10000);
-
-  // Official chat: generate reply token
-  if (type === "official") {
-    replyToken = generateID();
-    const tokenEl = document.getElementById("replyToken");
-    if (tokenEl) {
-      tokenEl.style.display = "inline";
-      tokenEl.innerText = "Reply Token: " + replyToken;
+        return Array.from(array)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
     }
-  } else {
-    const tokenEl = document.getElementById("replyToken");
-    if (tokenEl) tokenEl.style.display = "none";
-  }
 
-  // Private chat: show room status
-  if (type === "private") {
-    const roomStatus = document.getElementById("roomStatus");
-    if (roomStatus) roomStatus.innerText = "No room joined";
-  }
+    let anonymousId = generateAnonymousId();
 
-  // Connect WebSocket
-  ws = new WebSocket("ws://localhost:5000");
-
-  ws.onopen = () => {
-    console.log("✅ WebSocket connected");
-    if (chatType === "private" && room) {
-      ws.send(JSON.stringify({ type: "join", room }));
+    function updateIdDisplay() {
+        const idElement = document.getElementById("anonId");
+        if (idElement) {
+            idElement.textContent = anonymousId;
+        }
     }
-  };
 
-  ws.onmessage = (e) => {
-    try {
-      const data = JSON.parse(e.data);
-      if (!data.message) return;
+    updateIdDisplay();
 
-      const decrypted = CryptoJS.AES.decrypt(data.message, AES_KEY).toString(CryptoJS.enc.Utf8);
-      displayMessage(data.sender, decrypted, data.chatType);
-    } catch (err) {
-      console.error("Invalid message:", e.data);
-    }
-  };
+    // Change ID every 10 seconds
+    setInterval(() => {
+        anonymousId = generateAnonymousId();
+        updateIdDisplay();
+    }, 10000);
 
-  ws.onclose = () => console.log("⚠ WebSocket disconnected");
-}
+    // =============================
+    // 🌐 WebSocket Connection
+    // =============================
 
-// ------------------ DISPLAY MESSAGE ------------------
-function displayMessage(sender, msg, type) {
-  let boxId = "publicMessages";
-  if (type === "private") boxId = "privateMessages";
-  if (type === "official") boxId = "officialMessages";
+    const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+    const socket = new WebSocket(protocol + window.location.host);
 
-  const box = document.getElementById(boxId);
-  if (!box) return;
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        const messages = document.getElementById("messages");
 
-  const div = document.createElement("div");
-  div.className = sender === anonID ? "msg you" : "msg other";
+        if (!messages) return;
 
-  div.innerHTML = `<span class="anon">${sender === anonID ? "You" : sender}:</span> ${msg}`;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-}
+        const div = document.createElement("div");
+        div.textContent = `[${data.sender}] ${data.message}`;
+        messages.appendChild(div);
+    };
 
-// ------------------ SEND MESSAGE ------------------
-function sendMessage() {
-  const input = document.getElementById("messageInput");
-  const message = input.value.trim();
-  if (!message) return;
+    // =============================
+    // 📢 Public Chat
+    // =============================
 
-  const encrypted = CryptoJS.AES.encrypt(message, AES_KEY).toString();
+    window.sendPublicMessage = function () {
+        const input = document.getElementById("messageInput");
+        if (!input) return;
 
-  const payload = {
-    sender: anonID,
-    message: encrypted,
-    chatType
-  };
+        const message = input.value;
 
-  if (chatType === "private" && room) payload.room = room;
-  if (chatType === "official") payload.replyToken = replyToken;
+        socket.send(JSON.stringify({
+            type: "public",
+            message: message,
+            sender: anonymousId
+        }));
 
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(payload));
-  } else {
-    console.warn("⚠ WebSocket not ready");
-  }
+        input.value = "";
+    };
 
-  input.value = "";
-}
+    // =============================
+    // 🔒 Private Chat
+    // =============================
 
-// ------------------ PRIVATE CHAT ------------------
-function createRoom() {
-  if (chatType !== "private") return;
+    window.joinPrivateRoom = function () {
+        const room = document.getElementById("roomInput").value;
 
-  room = generateRoomCode();
-  const roomStatus = document.getElementById("roomStatus");
-  if (roomStatus) roomStatus.innerText = "Room Code: " + room;
+        socket.send(JSON.stringify({
+            type: "join",
+            room: room
+        }));
 
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: "join", room }));
-  }
-}
+        alert("Joined room: " + room);
+    };
 
-function joinRoom() {
-  if (chatType !== "private") return;
+    window.sendPrivateMessage = function () {
+        const room = document.getElementById("roomInput").value;
+        const input = document.getElementById("privateMessageInput");
+        if (!input) return;
 
-  room = document.getElementById("roomInput").value.trim().toUpperCase();
-  if (!room) return alert("Enter room code");
+        const message = input.value;
 
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: "join", room }));
-  }
+        socket.send(JSON.stringify({
+            type: "private",
+            room: room,
+            message: message,
+            sender: anonymousId
+        }));
 
-  const roomStatus = document.getElementById("roomStatus");
-  if (roomStatus) roomStatus.innerText = "Joined room: " + room;
-}
+        input.value = "";
+    };
 
-// ------------------ LOGOUT ------------------
-function logout() {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.close();
-  location.href = "index.html";
-}
+});

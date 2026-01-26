@@ -1,32 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Citizen → Official Chat</title>
-  <link rel="stylesheet" href="styles.css">
+    <title>Citizen → Official Chat</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<div class="chat-header">
-  <h2>Citizen → Official Chat</h2>
-  <span id="anonID"></span>
-  <button onclick="logout()">Exit</button>
-</div>
+    <h2>Citizen → Official Chat</h2>
 
-<div class="chat-container">
-  <div class="messages" id="officialMessages"></div>
-  <div class="input-area">
-    <input id="messageInput" placeholder="Message an official..." autofocus>
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
+    <!-- Anonymous ID Display -->
+    <p id="anonID" style="font-weight:bold; color:red;"></p>
 
-<script src="js/crypto-js.js"></script>
-<script src="chat.js"></script>
-<script>
-  // Initialize as official chat type
-  initChat("official");
-</script>
+    <div id="officialMessages" class="chat-box"></div>
 
+    <input type="text" id="messageInput" placeholder="Message an official...">
+    <button onclick="sendPublicMessage()">Send</button>
+
+    <script src="chat.js"></script>
 </body>
 </html>

@@ -3,102 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <title>Official Login</title>
-
 <style>
-/* Background */
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-}
-
-/* Login Card */
-.login-card {
-  background: #fff;
-  padding: 40px 30px;
-  border-radius: 20px;
-  width: 360px;
-  text-align: center;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
-  animation: fadeIn 0.8s ease;
-}
-
-.login-card h2 {
-  margin-bottom: 25px;
-  color: #333;
-}
-
-/* Inputs */
-.login-card input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 18px;
-  border-radius: 12px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  transition: all 0.3s ease;
-}
-
-.login-card input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 6px rgba(102,126,234,0.5);
-  outline: none;
-}
-
-/* Button */
-.login-card button {
-  width: 100%;
-  padding: 12px;
-  border-radius: 12px;
-  border: none;
-  background: #667eea;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.login-card button:hover {
-  background: #5a67d8;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-}
-
-/* Message */
-.message {
-  margin-top: 15px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* Signup Link */
-.link {
-  margin-top: 20px;
-  font-size: 14px;
-}
-
-.link a {
-  color: #667eea;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.link a:hover {
-  text-decoration: underline;
-}
-
-/* Animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+body { margin:0; font-family: Arial,sans-serif; height:100vh; display:flex; justify-content:center; align-items:center; background: linear-gradient(135deg,#667eea,#764ba2);}
+.login-card { background:#fff; padding:40px 30px; border-radius:20px; width:360px; text-align:center; box-shadow:0 15px 40px rgba(0,0,0,0.15); animation:fadeIn 0.8s ease;}
+.login-card h2{ margin-bottom:25px; color:#333;}
+.login-card input{ width:100%; padding:12px; margin-bottom:18px; border-radius:12px; border:1px solid #ccc; font-size:14px; }
+.login-card input:focus{ border-color:#667eea; outline:none; box-shadow:0 0 6px rgba(102,126,234,0.5);}
+.login-card button{ width:100%; padding:12px; border:none; border-radius:12px; background:#667eea; color:#fff; font-weight:600; cursor:pointer; }
+.login-card button:hover{ background:#5a67d8; transform:translateY(-2px); box-shadow:0 5px 15px rgba(0,0,0,0.15);}
+.message{ margin-top:15px; font-size:14px; font-weight:600; color:red;}
+.link{ margin-top:20px; font-size:14px;}
+.link a{ color:#667eea; font-weight:600; text-decoration:none;}
+.link a:hover{text-decoration:underline;}
+@keyframes fadeIn{ from {opacity:0; transform:translateY(-20px);} to {opacity:1; transform:translateY(0);} }
 </style>
 </head>
-
 <body>
 
 <div class="login-card">
@@ -112,45 +31,40 @@ body {
   <div class="message" id="msg"></div>
 
   <div class="link">
-    New official?
-    <a href="signup.html">Request Signup / Register here</a>
+    New official? <a href="signup.html">Request Signup / Register here</a>
   </div>
 </div>
 
 <script>
 async function login(){
-  const email = document.getElementById("email").value;
-  const accessKey = document.getElementById("accessKey").value;
+  const email = document.getElementById("email").value.trim();
+  const accessKey = document.getElementById("accessKey").value.trim();
   const msgEl = document.getElementById("msg");
 
   if(!email || !accessKey){
-    msgEl.style.color = "red";
     msgEl.innerText = "All fields required";
+    msgEl.style.color="red";
     return;
   }
 
   try{
-    const res = await fetch("http://localhost:5000/api/login",{
+    const res = await fetch("/api/login", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ email, accessKey })
     });
-
     const data = await res.json();
 
     if(res.ok){
       localStorage.setItem("JWT_TOKEN", data.token);
-      msgEl.style.color = "green";
-      msgEl.innerText = "Login successful! Redirecting...";
-      setTimeout(() => window.location.href = "official.html", 1000);
+      msgEl.innerText="Login successful! Redirecting...";
+      msgEl.style.color="green";
+      setTimeout(()=>window.location.href="official.html",1000);
     } else {
-      msgEl.style.color = "red";
-      msgEl.innerText = data.error;
+      msgEl.innerText=data.error || "Login failed";
+      msgEl.style.color="red";
     }
-  } catch(e){
-    msgEl.style.color = "red";
-    msgEl.innerText = e.message;
-  }
+  } catch(e){ msgEl.innerText=e.message; msgEl.style.color="red"; }
 }
 </script>
 

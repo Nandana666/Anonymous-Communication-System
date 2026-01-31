@@ -1,0 +1,10 @@
+{
+  "pendingOfficials": {},
+  "approvedOfficials": {
+    "a@gmail.com": {
+      "email": "a@gmail.com",
+      "department": "Fire",
+      "accessKey": "fca01ab9125b6207"
+    }
+  }
+}

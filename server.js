@@ -2,24 +2,61 @@ const express = require("express");
 const http = require("http");
 const path = require("path");
 const WebSocket = require("ws");
-const bodyParser = require("body-parser");
+//const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const cors = require("cors");
+const fs = require("fs");
 
 const app = express();
+app.use(cors({
+    origin: "*",
+    methods: ["GET","POST"],
+    allowedHeaders: ["Content-Type","Authorization"]
+}));
+
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+app.use(express.json());
 
-app.use(bodyParser.json());
+//app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
+// --------------------
+// JSON Data Storage
+// --------------------
+
+const DATA_FILE = path.join(__dirname, "data.json");
+
+
+// Load data
+function loadData(){
+
+    if(!fs.existsSync(DATA_FILE)){
+        fs.writeFileSync(DATA_FILE, JSON.stringify({
+            pendingOfficials:{},
+            approvedOfficials:{}
+        }, null, 2));
+    }
+
+    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+
+}
+
+// Save data
+function saveData(data){
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+// Initialize data
+let data = loadData();
 
 // --------------------
 // In-memory data
 // --------------------
 const admins = { "admin": "admin123" };
 const adminTokens = new Set(); // ✅ FIXED token storage
+const officialTokens = new Map();
 
-const pendingOfficials = {};
-const approvedOfficials = {};
+
 
 const privateRooms = new Map();
 const departments = {
@@ -67,18 +104,18 @@ app.post("/api/admin/approve", (req, res) => {
 
     const { email } = req.body;
 
-    if (!pendingOfficials[email])
+    if (!data.pendingOfficials[email])
         return res.status(400).json({ error: "No such pending request" });
 
     const accessKey = crypto.randomBytes(8).toString("hex");
 
-    approvedOfficials[email] = {
-        ...pendingOfficials[email],
+    data.approvedOfficials[email] = {
+        ...data.pendingOfficials[email],
         accessKey
     };
 
-    delete pendingOfficials[email];
-
+    delete data.pendingOfficials[email];
+    saveData(data);   // ⭐ VERY IMPORTANT
     res.json({ accessKey });
 });
 
@@ -96,7 +133,7 @@ app.get("/api/admin/requests", (req, res) => {
     if (!adminTokens.has(token))
         return res.status(401).json({ error: "Invalid token" });
 
-    res.json(pendingOfficials);
+    res.json(data.pendingOfficials);
 });
 
 
@@ -113,7 +150,7 @@ app.get("/api/admin/approved", (req, res) => {
     if (!adminTokens.has(token))
         return res.status(401).json({ error: "Invalid token" });
 
-    res.json(approvedOfficials);
+    res.json(data.approvedOfficials);
 });
 
 
@@ -129,14 +166,14 @@ app.post("/api/official/request", (req, res) => {
     if (!email || !department)
         return res.status(400).json({ error: "All fields required" });
 
-    if (approvedOfficials[email])
+    if (data.approvedOfficials[email])
         return res.status(400).json({ error: "Already approved" });
 
-    if (pendingOfficials[email])
+    if (data.pendingOfficials[email])
         return res.status(400).json({ error: "Already requested" });
 
-    pendingOfficials[email] = { email, department };
-
+    data.pendingOfficials[email] = { email, department };
+    saveData(data);   // ⭐ VERY IMPORTANT
     res.json({ message: "Signup request submitted!" });
 });
 
@@ -149,27 +186,72 @@ app.get("/api/official/status", (req, res) => {
     if (!email)
         return res.status(400).json({ error: "Email required" });
 
-    if (!approvedOfficials[email])
+    if (!data.approvedOfficials[email])
         return res.json({ approved: false });
 
     res.json({
         approved: true,
-        accessKey: approvedOfficials[email].accessKey
+        accessKey: data.approvedOfficials[email].accessKey
     });
 });
 
+// ✅ PASTE THE LOGIN ROUTE RIGHT HERE
+app.post("/api/official/login", (req, res) => {
 
+    const { email, accessKey } = req.body;
+
+    if (!email || !accessKey)
+        return res.status(400).json({ error: "All fields required" });
+
+    const official = data.approvedOfficials[email];
+
+    if (!official)
+        return res.status(401).json({ error: "Official not approved" });
+
+    if (official.accessKey !== accessKey)
+        return res.status(401).json({ error: "Invalid access key" });
+
+    const token = crypto.randomBytes(16).toString("hex");
+    officialTokens.set(token, Date.now() + 1000 * 60 * 60 * 4); // 4 hours
+
+
+    res.json({
+        success: true,
+        token,
+        department: official.department   // ⭐ ADD THIS LINE
+
+    });
+});
 // --------------------
 // ✅ Unified WebSocket (FIXES MAJOR BUG)
 // --------------------
 wss.on("connection", (ws, req) => {
 
     const url = new URL(req.url, `http://${req.headers.host}`);
+    const token = url.searchParams.get("token");
+    const dept  = url.searchParams.get("dept");
+
+    const expiry = officialTokens.get(token);
+
+    if(
+        !adminTokens.has(token) &&
+        (!expiry || expiry < Date.now())
+    ){
+        ws.close();
+        return;
+    }
+
+
+// ✅ AFTER validation → join department
+    if(dept && departments[dept]){
+        departments[dept].add(ws);
+    }
+
 
     // ================= ADMIN =================
     if (url.pathname === "/admin") {
 
-        const token = url.searchParams.get("token");
+        //const token = url.searchParams.get("token");
 
         if (!token || !adminTokens.has(token)) {
             ws.close();
@@ -179,21 +261,22 @@ wss.on("connection", (ws, req) => {
         // Send current state
         ws.send(JSON.stringify({
             type: "pendingUpdate",
-            pending: pendingOfficials
+            pending: data.pendingOfficials
         }));
 
         ws.send(JSON.stringify({
             type: "approvedUpdate",
-            approved: approvedOfficials
+            approved: data.approvedOfficials
         }));
 
         ws.on("message", msg => {
 
             try {
 
-                const data = JSON.parse(msg);
+                const message = JSON.parse(msg);
 
-                if (data.type === "approved" && approvedOfficials[data.email]) {
+
+                if (message.type === "approved" && data.approvedOfficials[message.email]) {
 
                     wss.clients.forEach(client => {
 
@@ -201,12 +284,12 @@ wss.on("connection", (ws, req) => {
 
                             client.send(JSON.stringify({
                                 type: "approvedUpdate",
-                                approved: approvedOfficials
+                                approved: data.approvedOfficials
                             }));
 
                             client.send(JSON.stringify({
                                 type: "pendingUpdate",
-                                pending: pendingOfficials
+                                pending: data.pendingOfficials
                             }));
                         }
                     });
@@ -221,23 +304,23 @@ wss.on("connection", (ws, req) => {
     // ================= CITIZEN / OFFICIAL =================
     ws.on("message", raw => {
 
-        let data;
-        try { data = JSON.parse(raw); }
+        let message;
+        try { message = JSON.parse(raw); }
         catch { return; }
 
         // Citizen-to-official
-        if (data.chatType === "cto") {
+        if (message.chatType === "cto") {
 
-            const dept = data.department;
+            const dept = message.department;
 
             if (!dept || !departments[dept])
                 return;
 
-            departments[dept].add(ws);
+            //departments[dept].add(ws);
 
             departments[dept].forEach(client => {
                 if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(data));
+                    client.send(JSON.stringify(message));
                 }
             });
         }
@@ -256,6 +339,6 @@ wss.on("connection", (ws, req) => {
 // --------------------
 // Start server
 // --------------------
-server.listen(5000, "127.0.0.1", () =>
+server.listen(5000, "0.0.0.0", () =>
     console.log("Server running on port 5000")
 );

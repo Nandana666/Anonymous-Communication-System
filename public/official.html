@@ -5,55 +5,107 @@
   <title>Official Chat</title>
   <style>
     body{font-family:Arial; margin:20px;}
-    .messages{border:1px solid #ccc;height:400px;overflow-y:scroll;padding:5px;margin-bottom:10px;}
+    .messages{
+        border:1px solid #ccc;
+        height:400px;
+        overflow-y:scroll;
+        padding:5px;
+        margin-bottom:10px;
+    }
     input{width:70%; padding:5px;}
     button{padding:5px 10px;}
   </style>
 </head>
+
 <body>
-  <h2>Official Chat</h2>
-  <button onclick="logout()">Logout</button><br>
-  <div class="messages" id="messages"></div>
-  <input id="msg" placeholder="Reply to citizen...">
-  <button onclick="sendMessage()">Send</button>
+
+<script>
+// 🔐 HARD LOGIN PROTECTION (RUNS FIRST)
+
+const TOKEN = localStorage.getItem("JWT_TOKEN");
+const DEPT  = localStorage.getItem("DEPARTMENT");
+
+if(!TOKEN || !DEPT){
+    alert("Session expired. Please login again.");
+    window.location.href="login.html";
+}
+</script>
+
+
+<h2>Official Chat</h2>
+<button onclick="logout()">Logout</button><br><br>
+
+<div class="messages" id="messages"></div>
+
+<input id="msg" placeholder="Reply to citizen...">
+<button onclick="sendMessage()">Send</button>
+
 
 <script src="js/crypto-js.js"></script>
+
 <script>
+
 let ws;
-const AES_KEY="my_secret_key_123";
-const JWT_TOKEN = localStorage.getItem("JWT_TOKEN");
-if(!JWT_TOKEN){ alert("Login required"); window.location.href="login.html"; }
+let currentReplyToken = null;
+const AES_KEY = "my_secret_key_123";
 
-let currentReplyToken=null;
-ws=new WebSocket(`ws://localhost:5000?token=${JWT_TOKEN}`);
-ws.onopen=()=>console.log("Connected as official");
+// ✅ WebSocket connection
+ws = new WebSocket(
+    `ws://${location.host}?token=${TOKEN}`
+);
 
-ws.onmessage=(e)=>{
-  const msg=JSON.parse(e.data);
-  const messagesEl=document.getElementById("messages");
-  let text=msg.text;
-  try{
-    const bytes=CryptoJS.AES.decrypt(msg.text,AES_KEY);
-    const decrypted=bytes.toString(CryptoJS.enc.Utf8);
-    if(decrypted) text=decrypted;
-  }catch{}
-  messagesEl.innerHTML+=`[${msg.department}][Citizen] ${text}<br>`;
-  messagesEl.scrollTop=messagesEl.scrollHeight;
-  currentReplyToken=msg.replyToken;
+ws.onopen = () => {
+    console.log("✅ Connected as official");
+};
+
+ws.onmessage = (e) => {
+
+    const msg = JSON.parse(e.data);
+    const messagesEl = document.getElementById("messages");
+
+    let text = msg.text;
+
+    // Try decrypt
+    try{
+        const bytes = CryptoJS.AES.decrypt(msg.text, AES_KEY);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        if(decrypted) text = decrypted;
+    }catch{}
+
+    messagesEl.innerHTML += `
+        <b>[${msg.department}] Citizen:</b> ${text}<br>
+    `;
+
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    currentReplyToken = msg.replyToken;
 };
 
 function sendMessage(){
-  const input=document.getElementById("msg");
-  if(!input.value || !currentReplyToken) return;
-  const encrypted=CryptoJS.AES.encrypt(input.value,AES_KEY).toString();
-  ws.send(JSON.stringify({chatType:"official",text:encrypted,replyToCitizenToken:currentReplyToken}));
-  input.value="";
+
+    const input = document.getElementById("msg");
+
+    if(!input.value || !currentReplyToken) return;
+
+    const encrypted = CryptoJS.AES.encrypt(input.value, AES_KEY).toString();
+
+    ws.send(JSON.stringify({
+        chatType:"official",
+        text: encrypted,
+        replyToCitizenToken: currentReplyToken
+    }));
+
+    input.value="";
 }
 
 function logout(){
-  localStorage.removeItem("JWT_TOKEN");
-  window.location.href="login.html";
+    localStorage.removeItem("JWT_TOKEN");
+    localStorage.removeItem("DEPARTMENT");
+    if(ws) ws.close();
+    window.location.href="login.html";
 }
+
 </script>
+
 </body>
 </html>

@@ -33,7 +33,7 @@
 </div>
 
 <script>
-const API = "http://localhost:5000";
+//const API = "http://localhost:5000";
 
 async function requestSignup(){
   const email = document.getElementById("email").value;
@@ -41,7 +41,7 @@ async function requestSignup(){
   const msg = document.getElementById("msg");
 
   try{
-    const res = await fetch(API + "/api/official/request", {
+    const res = await fetch("/api/official/request", {
       method: "POST",
       headers: { "Content-Type":"application/json" },
       body: JSON.stringify({ email, department })
@@ -56,7 +56,7 @@ async function checkStatus(){
   const email = document.getElementById("email").value;
   if(!email) return alert("Enter email!");
   try{
-    const res = await fetch(API + "/api/official/status?email=" + email);
+    const res = await fetch("/api/official/status?email=" + email);
     const data = await res.json();
     if (!data.approved) { alert("Not approved yet"); return; }
 

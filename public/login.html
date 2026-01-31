@@ -48,7 +48,7 @@ async function login(){
   }
 
   try{
-    const res = await fetch("/api/login", {
+    const res = await fetch("/api/official/login", {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ email, accessKey })
@@ -57,6 +57,7 @@ async function login(){
 
     if(res.ok){
       localStorage.setItem("JWT_TOKEN", data.token);
+      localStorage.setItem("DEPARTMENT", data.department); // ⭐ ADD THIS
       msgEl.innerText="Login successful! Redirecting...";
       msgEl.style.color="green";
       setTimeout(()=>window.location.href="official.html",1000);

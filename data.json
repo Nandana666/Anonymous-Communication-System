@@ -5,6 +5,11 @@
       "email": "a@gmail.com",
       "department": "Fire",
       "accessKey": "fca01ab9125b6207"
+    },
+    "b@gmail.com": {
+      "email": "b@gmail.com",
+      "department": "Cyber",
+      "accessKey": "af5c5aa93bea4798"
     }
   }
 }

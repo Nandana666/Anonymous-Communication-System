@@ -230,22 +230,59 @@ wss.on("connection", (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const token = url.searchParams.get("token");
     const dept  = url.searchParams.get("dept");
+    const path = url.pathname;
+// ================= OFFICIAL SOCKET =================
+if(path === "/official"){
 
-    const expiry = officialTokens.get(token);
-
-    if(
-        !adminTokens.has(token) &&
-        (!expiry || expiry < Date.now())
-    ){
+    if(!dept || !departments[dept]){
+        console.log("Invalid department:", dept);
         ws.close();
         return;
     }
+    if(path === "/citizen"){
+    ws.isCitizen = true;
+    console.log("✅ Citizen connected");
+}
+
+    ws.isOfficial = true;
+    ws.department = dept;
+
+    departments[dept].add(ws);
+
+    console.log("✅ Official joined:", dept);
+    console.log("Officials inside:", departments[dept].size);
+}
 
 
-// ✅ AFTER validation → join department
-    if(dept && departments[dept]){
-        departments[dept].add(ws);
-    }
+//     const expiry = officialTokens.get(token);
+
+//     // ✅ Only validate if token exists (official/admin)
+// // Citizens are allowed without token
+// if(token){
+
+//     if(
+//         !adminTokens.has(token) &&
+//         (!expiry || expiry < Date.now())
+//     ){
+//         ws.close();
+//         return;
+//     }
+
+// }
+
+
+// // ✅ AFTER validation → join department
+// if(dept && departments[dept]){
+
+//     // Mark this socket as official
+//     ws.isOfficial = !!token;
+//     ws.department = dept;
+
+//     departments[dept].add(ws);
+
+//     console.log("✅ Joined department:", dept);
+// }
+
 
 
     // ================= ADMIN =================
@@ -311,7 +348,8 @@ wss.on("connection", (ws, req) => {
         // Citizen-to-official
         if (message.chatType === "cto") {
 
-            const dept = message.department;
+            const dept = message.department?.trim();
+
 
             if (!dept || !departments[dept])
                 return;
@@ -319,10 +357,19 @@ wss.on("connection", (ws, req) => {
             //departments[dept].add(ws);
 
             departments[dept].forEach(client => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify(message));
-                }
-            });
+
+    if(
+        client.readyState === WebSocket.OPEN &&
+        client.isOfficial // ✅ send only to officials
+    ){
+        client.send(JSON.stringify(message));
+    }
+
+});
+console.log("Forwarding to dept:", message.department);
+console.log("Officials inside:", departments[message.department]?.size);
+
+
         }
 
         // 🔵 NOTE:

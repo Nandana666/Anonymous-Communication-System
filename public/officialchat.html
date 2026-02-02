@@ -29,8 +29,11 @@
 
     <!-- Input -->
     <input type="text" id="messageInput" placeholder="Message the department...">
-    <button onclick="sendC2OMessage()">Send</button>
+    <button id="sendBtn" onclick="sendC2OMessage()" disabled>
+    Connecting...
+    </button>
 
-    <script src="officialchat.js"></script>
+
+    <script src="officialchat.js" defer></script>
 </body>
 </html>

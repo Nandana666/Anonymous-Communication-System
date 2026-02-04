@@ -37,8 +37,13 @@ if(!TOKEN || !DEPT){
 
 <div class="messages" id="messages"></div>
 
+<label>Reply Token:</label>
+<input id="replyTokenInput" placeholder="Enter reply token here..." style="width:70%; padding:5px;">
+<br><br>
+
 <input id="msg" placeholder="Reply to citizen...">
 <button onclick="sendMessage()">Send</button>
+
 
 
 <script src="js/crypto-js.js"></script>
@@ -108,13 +113,17 @@ ws.onmessage = (e) => {
     // 🔵 Citizen → Official
     if(msg.chatType === "cto"){
 
-        messagesEl.innerHTML += `
-            <b>[${msg.department}] Citizen:</b> ${text}<br>
-            <small>Reply Token: ${msg.replyToken}</small><br><br>
-        `;
+    messagesEl.innerHTML += `
+        <b>[${msg.department}] Citizen:</b> ${text}<br>
+        <small>Reply Token: ${msg.replyToken}</small><br><br>
+    `;
 
-        currentReplyToken = msg.replyToken;
-    }
+    currentReplyToken = msg.replyToken;
+
+    // ✅ Auto-fill input field
+    const tokenInput = document.getElementById("replyTokenInput");
+    if(tokenInput) tokenInput.value = msg.replyToken;
+}
 
     // 🟢 Official → Citizen (show own reply)
     if(msg.chatType === "otc"){
@@ -133,24 +142,29 @@ ws.onmessage = (e) => {
 function sendMessage(){
 
     const input = document.getElementById("msg");
+    const tokenInput = document.getElementById("replyTokenInput");
 
-    if(!input.value || !currentReplyToken) {
-        alert("Select a citizen message first.");
-        return;
-    }
+    const manualToken = tokenInput.value.trim();
+
+    if(!input.value.trim())
+        return alert("Enter a message!");
+
+    if(!manualToken)
+        return alert("Enter a Reply Token!");
 
     const encrypted = CryptoJS.AES.encrypt(input.value, AES_KEY).toString();
 
     ws.send(JSON.stringify({
-        chatType: "otc",                 // ✅ MUST match server
-        replyToken: currentReplyToken,   // ✅ MUST match server
-        department: DEPT,                // ✅ required
+        chatType: "otc",
+        replyToken: manualToken,   // ✅ use manual field
+        department: DEPT,
         message: encrypted,
         timestamp: Date.now()
     }));
 
     input.value="";
 }
+
 
 
 function logout(){

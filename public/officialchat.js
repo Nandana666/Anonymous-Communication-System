@@ -42,10 +42,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==============================
     let replyToken = sessionStorage.getItem("replyToken");
 
-    if(!replyToken){
-        replyToken = strongRandom(32) + Date.now();
-        sessionStorage.setItem("replyToken", replyToken);
-    }
+    // if(!replyToken){
+    //     replyToken = strongRandom(32) + Date.now();
+    //     sessionStorage.setItem("replyToken", replyToken);
+    // }
 
     const replyEl = document.getElementById("replyToken");
     if(replyEl)
@@ -91,7 +91,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     isConnecting = true;
-    socket = new WebSocket("ws://" + location.host + "/citizen");
+    socket = new WebSocket(
+    `ws://${location.host}/citizen`
+);
+
 
     
 
@@ -138,35 +141,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
     socket.onmessage = (event) => {
 
-        let data;
+    let data;
 
-        try{
-            data = JSON.parse(event.data);
-        }catch{
-            return;
+    try{
+        data = JSON.parse(event.data);
+    }catch{
+        return;
+    }
+
+    // ✅ NEW: Handle first-time reply token
+    if(data.type === "newReplyToken"){
+
+        if(!sessionStorage.getItem("replyToken")){
+            alert("⚠️ Save this Reply Token:\n\n" + data.replyToken);
+            sessionStorage.setItem("replyToken", data.replyToken);
+            replyToken = data.replyToken;
+
+            const replyEl = document.getElementById("replyToken");
+            if(replyEl) replyEl.textContent = replyToken;
         }
 
-        if(data.replyToken !== replyToken)
-            return;
+        return;
+    }
 
-        const chatBox = document.getElementById("chatBox");
-        if(!chatBox) return;
+    // ✅ Only show replies matching token
+    if(!replyToken || data.replyToken !== replyToken)
+        return;
 
-        const div = document.createElement("div");
+    const chatBox = document.getElementById("chatBox");
+    if(!chatBox) return;
 
-        const time = new Date(data.timestamp)
-            .toLocaleTimeString();
+    const div = document.createElement("div");
 
-        div.innerHTML =
-        `<b>Official [${data.department}]</b>: 
-        ${data.message}
-        <span style="color:gray;font-size:0.8em;">
-        (${time})
-        </span>`;
+    const time = new Date(data.timestamp)
+        .toLocaleTimeString();
 
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    };
+    let text = data.message;
+
+// Try decrypt
+try {
+    const bytes = CryptoJS.AES.decrypt(text, "my_secret_key_123");
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    if (decrypted) text = decrypted;
+} catch {}
+
+div.innerHTML =
+`<b>Official [${data.department}]</b>: 
+${text}
+<span style="color:gray;font-size:0.8em;">
+(${new Date(data.timestamp).toLocaleTimeString()})
+</span>`;
+
+
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+};
+
 }
 
 
@@ -203,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
             sender: anonymousId,
 
             // TRUE routing identity
-            replyToken: replyToken,
+            replyToken: replyToken || null,
 
             department: dept,
             message,

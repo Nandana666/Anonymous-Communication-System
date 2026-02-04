@@ -50,20 +50,53 @@ let currentReplyToken = null;
 const AES_KEY = "my_secret_key_123";
 
 // ✅ WebSocket connection
-ws = new WebSocket(`ws://${location.host}/official?token=${TOKEN}&dept=${DEPT}`);
+//ws = new WebSocket(`ws://${location.host}/official?token=${TOKEN}&dept=${DEPT}`);
+const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+ws = new WebSocket(`${protocol}//${location.host}/official?token=${TOKEN}&dept=${DEPT}`);
 
 
 ws.onopen = () => {
     console.log("✅ Connected as official");
 };
 
+// ws.onmessage = (e) => {
+
+//     const msg = JSON.parse(e.data);
+
+//     // Only handle citizen → official
+//     if(msg.chatType !== "cto") return;
+
+//     const messagesEl = document.getElementById("messages");
+
+//     let text = msg.message;
+
+//     // Try decrypt
+//     try{
+//         const bytes = CryptoJS.AES.decrypt(text, AES_KEY);
+//         const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+//         if(decrypted) text = decrypted;
+//     }catch{}
+
+//     messagesEl.innerHTML += `
+//         <b>[${msg.department}] Citizen:</b> ${text}<br>
+//         <small>Reply Token: ${msg.replyToken}</small><br><br>
+//     `;
+
+//     messagesEl.scrollTop = messagesEl.scrollHeight;
+
+//     currentReplyToken = msg.replyToken; // select latest
+// };
+
 ws.onmessage = (e) => {
 
     const msg = JSON.parse(e.data);
+
+    // Only handle cto or otc
+    if(msg.chatType !== "cto" && msg.chatType !== "otc") return;
+
     const messagesEl = document.getElementById("messages");
 
-    let text = msg.message || msg.text;
-
+    let text = msg.message;
 
     // Try decrypt
     try{
@@ -72,32 +105,53 @@ ws.onmessage = (e) => {
         if(decrypted) text = decrypted;
     }catch{}
 
+    // 🔵 Citizen → Official
+    if(msg.chatType === "cto"){
+
+        messagesEl.innerHTML += `
+            <b>[${msg.department}] Citizen:</b> ${text}<br>
+            <small>Reply Token: ${msg.replyToken}</small><br><br>
+        `;
+
+        currentReplyToken = msg.replyToken;
+    }
+
+    // 🟢 Official → Citizen (show own reply)
+    if(msg.chatType === "otc"){
+
     messagesEl.innerHTML += `
-        <b>[${msg.department}] Citizen:</b> ${text}<br>
+        <b>You [${msg.department}]</b>: ${text}
+        <span style="color:gray;font-size:0.8em;">
+        (${new Date(msg.timestamp).toLocaleTimeString()})
+        </span><br><br>
     `;
+}
 
     messagesEl.scrollTop = messagesEl.scrollHeight;
-
-    currentReplyToken = msg.replyToken;
 };
 
 function sendMessage(){
 
     const input = document.getElementById("msg");
 
-    if(!input.value || !currentReplyToken) return;
+    if(!input.value || !currentReplyToken) {
+        alert("Select a citizen message first.");
+        return;
+    }
 
     const encrypted = CryptoJS.AES.encrypt(input.value, AES_KEY).toString();
 
     ws.send(JSON.stringify({
-    chatType:"official",
-    message: encrypted,
-    replyToCitizenToken: currentReplyToken
-}));
-
+        chatType: "otc",                 // ✅ MUST match server
+        replyToken: currentReplyToken,   // ✅ MUST match server
+        department: DEPT,                // ✅ required
+        message: encrypted,
+        timestamp: Date.now()
+    }));
 
     input.value="";
 }
+
 
 function logout(){
     localStorage.removeItem("JWT_TOKEN");

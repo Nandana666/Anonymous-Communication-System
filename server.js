@@ -230,19 +230,30 @@ wss.on("connection", (ws, req) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const token = url.searchParams.get("token");
     const dept  = url.searchParams.get("dept");
-    const path = url.pathname;
+    const socketPath = url.pathname;
+
+    // ================= CITIZEN SOCKET =================
+if(socketPath === "/citizen"){
+    ws.isCitizen = true;
+    console.log("✅ Citizen connected");
+}
 // ================= OFFICIAL SOCKET =================
-if(path === "/official"){
+if(socketPath === "/official"){
 
     if(!dept || !departments[dept]){
         console.log("Invalid department:", dept);
         ws.close();
         return;
     }
-    if(path === "/citizen"){
-    ws.isCitizen = true;
-    console.log("✅ Citizen connected");
-}
+
+    // 🔐 VALIDATE OFFICIAL TOKEN
+    const expiry = officialTokens.get(token);
+
+    if(!token || !expiry || expiry < Date.now()){
+        console.log("Invalid or expired official token");
+        ws.close();
+        return;
+    }
 
     ws.isOfficial = true;
     ws.department = dept;
@@ -252,6 +263,7 @@ if(path === "/official"){
     console.log("✅ Official joined:", dept);
     console.log("Officials inside:", departments[dept].size);
 }
+
 
 
 //     const expiry = officialTokens.get(token);
@@ -348,29 +360,195 @@ if(path === "/official"){
         // Citizen-to-official
         if (message.chatType === "cto") {
 
-            const dept = message.department?.trim();
+           const dept = message.department?.trim();
+if (!dept || !departments[dept]) return;
+
+// ---------- Create Department Folder ----------
+const deptFolder = path.join(__dirname, "data", dept);
+if(!fs.existsSync(deptFolder)){
+    fs.mkdirSync(deptFolder, { recursive: true });
+}
+
+const replyFile = path.join(deptFolder, "replyData.json");
+const blockchainFile = path.join(deptFolder, "blockchain.json");
+
+// ---------- Initialize Files ----------
+
+if(!fs.existsSync(replyFile)){
+    fs.writeFileSync(replyFile, JSON.stringify({}, null, 2));
+}
+
+if(!fs.existsSync(blockchainFile)){
+    fs.writeFileSync(blockchainFile, JSON.stringify([], null, 2));
+}
+
+let replyData = JSON.parse(fs.readFileSync(replyFile));
+let chain = JSON.parse(fs.readFileSync(blockchainFile));
+
+let replyToken = message.replyToken;
+
+// ---------- Generate Reply Token ----------
+// ---------- Generate Reply Token ONLY if not provided ----------
+if(!replyToken){
+
+    replyToken = crypto.randomBytes(32).toString("hex");
+
+    replyData[replyToken] = {
+        department: dept,
+        createdAt: Date.now(),
+        messages: []
+    };
+
+    fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
+
+    // Send token only once to citizen
+    ws.send(JSON.stringify({
+        type: "newReplyToken",
+        replyToken
+    }));
+
+}
+
+// If replyToken exists but not stored → reject (security)
+else if(!replyData[replyToken] || replyData[replyToken].department !== dept){
+    console.log("Invalid or cross-department reply token attempt");
+    return;
+}
 
 
-            if (!dept || !departments[dept])
-                return;
 
-            //departments[dept].add(ws);
+// ---------- Store Message ----------
+replyData[replyToken].messages.push({
+    from: "citizen",
+    message: message.message,
+    timestamp: message.timestamp
+});
 
-            departments[dept].forEach(client => {
+fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
 
+// ---------- Blockchain ----------
+const previousBlock = chain[chain.length - 1];
+const previousHash = previousBlock ? previousBlock.hash : "0";
+
+const dataHash = crypto
+    .createHash("sha256")
+    .update(message.timestamp + message.message + replyToken + dept)
+    .digest("hex");
+
+const block = {
+    index: chain.length,
+    timestamp: Date.now(),
+    dataHash,
+    previousHash
+};
+
+block.hash = crypto
+    .createHash("sha256")
+    .update(block.index + block.timestamp + block.dataHash + block.previousHash)
+    .digest("hex");
+
+chain.push(block);
+
+fs.writeFileSync(blockchainFile, JSON.stringify(chain, null, 2));
+
+// ---------- Send To Officials ----------
+// ---------- Send To Officials ----------
+departments[dept].forEach(client => {
     if(
         client.readyState === WebSocket.OPEN &&
-        client.isOfficial // ✅ send only to officials
+        client.isOfficial
     ){
-        client.send(JSON.stringify(message));
+        client.send(JSON.stringify({
+            chatType: "cto",
+            department: dept,
+            message: message.message,
+            timestamp: message.timestamp,
+            replyToken: replyToken
+        }));
     }
-
 });
-console.log("Forwarding to dept:", message.department);
-console.log("Officials inside:", departments[message.department]?.size);
+
+
 
 
         }
+// ================= OFFICIAL → CITIZEN =================
+if (message.chatType === "otc") {
+
+    const dept = message.department?.trim();
+    const replyToken = message.replyToken;
+
+    if (!dept || !departments[dept]) return;
+
+    const deptFolder = path.join(__dirname, "data", dept);
+    const replyFile = path.join(deptFolder, "replyData.json");
+    const blockchainFile = path.join(deptFolder, "blockchain.json");
+
+    if (!fs.existsSync(replyFile)) return;
+
+    let replyData = JSON.parse(fs.readFileSync(replyFile));
+    let chain = JSON.parse(fs.readFileSync(blockchainFile));
+
+    // Validate reply token
+    if (!replyData[replyToken] || replyData[replyToken].department !== dept) {
+        console.log("Invalid reply token for official reply");
+        return;
+    }
+
+    // Store official reply
+    replyData[replyToken].messages.push({
+        from: "official",
+        message: message.message,
+        timestamp: message.timestamp
+    });
+
+    fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
+
+    // Add block to blockchain
+    const previousBlock = chain[chain.length - 1];
+    const previousHash = previousBlock ? previousBlock.hash : "0";
+
+    const dataHash = crypto
+        .createHash("sha256")
+        .update(message.timestamp + message.message + replyToken + dept)
+        .digest("hex");
+
+    const block = {
+        index: chain.length,
+        timestamp: Date.now(),
+        dataHash,
+        previousHash
+    };
+
+    block.hash = crypto
+        .createHash("sha256")
+        .update(block.index + block.timestamp + block.dataHash + block.previousHash)
+        .digest("hex");
+
+    chain.push(block);
+
+    fs.writeFileSync(blockchainFile, JSON.stringify(chain, null, 2));
+
+    // Send reply to BOTH citizens and officials of that department
+wss.clients.forEach(client => {
+    if (
+        client.readyState === WebSocket.OPEN &&
+        (
+            client.isCitizen ||
+            (client.isOfficial && client.department === dept)
+        )
+    ) {
+        client.send(JSON.stringify({
+            chatType: "otc",
+            department: dept,
+            replyToken,
+            message: message.message,
+            timestamp: message.timestamp
+        }));
+    }
+});
+
+}
 
         // 🔵 NOTE:
         // Your public/private chat is handled inside chat.js

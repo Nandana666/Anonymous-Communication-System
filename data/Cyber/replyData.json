@@ -1,0 +1,23 @@
+{
+  "364c4d4b943f14ddae67678c3e4377d220cde2ff00a8bf3ec225b28c3edf1dac": {
+    "department": "Cyber",
+    "createdAt": 1771056362544,
+    "messages": [
+      {
+        "from": "citizen",
+        "message": "788709",
+        "timestamp": 1771056362068
+      },
+      {
+        "from": "citizen",
+        "message": "glkhjt",
+        "timestamp": 1771056406019
+      },
+      {
+        "from": "official",
+        "message": "U2FsdGVkX19fi4Qk1roATFzRkhklrjwLDgHoMbEAKJA=",
+        "timestamp": 1771056412553
+      }
+    ]
+  }
+}

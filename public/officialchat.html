@@ -23,7 +23,17 @@
     <!-- Reply Token -->
     <p>Reply Token: <span id="replyToken" style="font-weight:bold;"></span> 
     <button onclick="copyReplyToken()">Copy</button></p>
+        <hr>
 
+<h3>Check Previous Messages</h3>
+
+<input type="text" id="checkTokenInput" 
+       placeholder="Enter your Reply Token"
+       style="width:300px; padding:5px;">
+
+<button onclick="checkMessages()">Check Messages</button>
+
+<br><br>
     <!-- Chatbox -->
     <div id="chatBox" class="chat-box"></div>
 

@@ -34,6 +34,17 @@ if(!TOKEN || !DEPT){
 
 <h2>Official Chat</h2>
 <button onclick="logout()">Logout</button><br><br>
+<hr>
+
+<h3>Check Citizen Conversation</h3>
+
+<input type="text" id="checkReplyToken"
+       placeholder="Enter Reply Token to view conversation"
+       style="width:70%; padding:5px;">
+
+<button onclick="loadConversation()">Load Messages</button>
+
+<br><br>
 
 <div class="messages" id="messages"></div>
 

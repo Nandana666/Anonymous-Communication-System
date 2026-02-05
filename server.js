@@ -356,6 +356,47 @@ if(socketPath === "/official"){
         let message;
         try { message = JSON.parse(raw); }
         catch { return; }
+        // ================= LOAD HISTORY =================
+if (message.chatType === "loadHistory") {
+
+    const dept = message.department?.trim();
+    const replyToken = message.replyToken;
+
+    if (!dept || !departments[dept]) return;
+
+    const deptFolder = path.join(__dirname, "data", dept);
+    const replyFile = path.join(deptFolder, "replyData.json");
+
+    if (!fs.existsSync(replyFile)) return;
+
+    let replyData = JSON.parse(fs.readFileSync(replyFile));
+
+    if (!replyData[replyToken]) return;
+
+    // Send full history
+    ws.send(JSON.stringify({
+        chatType: "history",
+        department: dept,
+        replyToken,
+        messages: replyData[replyToken].messages
+    }));
+
+    // Mark messages as read
+    replyData[replyToken].messages.forEach(msg => {
+
+        if (ws.isOfficial && msg.from === "citizen") {
+            msg.readByOfficial = true;
+        }
+
+        if (ws.isCitizen && msg.from === "official") {
+            msg.readByCitizen = true;
+        }
+    });
+
+    fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
+
+    return;
+}
 
         // Citizen-to-official
         if (message.chatType === "cto") {
@@ -421,8 +462,10 @@ else if(!replyData[replyToken] || replyData[replyToken].department !== dept){
 replyData[replyToken].messages.push({
     from: "citizen",
     message: message.message,
-    timestamp: message.timestamp
+    timestamp: message.timestamp,
+    readByOfficial: false
 });
+
 
 fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
 
@@ -497,10 +540,12 @@ if (message.chatType === "otc") {
 
     // Store official reply
     replyData[replyToken].messages.push({
-        from: "official",
-        message: message.message,
-        timestamp: message.timestamp
-    });
+    from: "official",
+    message: message.message,
+    timestamp: message.timestamp,
+    readByCitizen: false
+});
+
 
     fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
 

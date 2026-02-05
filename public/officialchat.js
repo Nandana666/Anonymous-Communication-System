@@ -1,7 +1,6 @@
 let socket = null;
 let isConnecting = false;
 
-
 document.addEventListener("DOMContentLoaded", () => {
 
     // ==============================
@@ -17,7 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
             .substring(0,len);
     }
 
-
     // ==============================
     // Rotating Anonymous ID (DISPLAY ONLY)
     // ==============================
@@ -27,182 +25,206 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function rotateAnon(){
         anonymousId = strongRandom(8);
-
-        if(idEl)
-            idEl.textContent = anonymousId;
+        if(idEl) idEl.textContent = anonymousId;
     }
 
-    rotateAnon(); // initial
-    setInterval(rotateAnon, 10000); // every 10 seconds
-
-
+    rotateAnon();
+    setInterval(rotateAnon, 10000);
 
     // ==============================
     // Stable Reply Token (REAL Identity)
     // ==============================
     let replyToken = sessionStorage.getItem("replyToken");
 
-    // if(!replyToken){
-    //     replyToken = strongRandom(32) + Date.now();
-    //     sessionStorage.setItem("replyToken", replyToken);
-    // }
-
     const replyEl = document.getElementById("replyToken");
-    if(replyEl)
-        replyEl.textContent = replyToken;
-
-
+    if(replyEl) replyEl.textContent = replyToken;
 
     // ==============================
-    // Clipboard (Tor Safe)
+    // Clipboard
     // ==============================
     window.copyReplyToken = function(){
-
         const temp = document.createElement("input");
         temp.value = replyToken;
-
         document.body.appendChild(temp);
         temp.select();
         document.execCommand("copy");
         document.body.removeChild(temp);
-
         alert("Reply token copied!");
     };
 
-
-
     // ==============================
-    // WebSocket (Auto-Reconnect)
+    // WebSocket
     // ==============================
-
-    //let socket;
-
     function connectSocket(){
 
-    // ✅ Prevent duplicate connections
-    if(isConnecting) return;
+        if(isConnecting) return;
 
-    // ✅ If socket already alive → do nothing
-    if(socket && (
-        socket.readyState === WebSocket.OPEN ||
-        socket.readyState === WebSocket.CONNECTING
-    )){
-        return;
-    }
-
-    isConnecting = true;
-    socket = new WebSocket(
-    `ws://${location.host}/citizen`
-);
-
-
-    
-
-
-    socket.onopen = () => {
-
-        console.log("✅ Connected");
-
-        isConnecting = false;
-
-        const btn = document.getElementById("sendBtn");
-        if(btn){
-            btn.disabled = false;
-            btn.innerText = "Send";
-        }
-    };
-
-
-    socket.onerror = () => {
-
-        console.log("⚠️ WebSocket error");
-
-        // Let onclose handle reconnect
-        socket.close();
-    };
-
-
-    socket.onclose = () => {
-
-        console.log("⚠️ Socket closed — retrying in 5s");
-
-        isConnecting = false;
-
-        const btn = document.getElementById("sendBtn");
-        if(btn){
-            btn.disabled = true;
-            btn.innerText = "Reconnecting...";
+        if(socket &&
+            (socket.readyState === WebSocket.OPEN ||
+             socket.readyState === WebSocket.CONNECTING)){
+            return;
         }
 
-        // ⭐ Increase delay (Tor needs it)
-        setTimeout(connectSocket, 5000);
-    };
+        isConnecting = true;
+        socket = new WebSocket(`ws://${location.host}/citizen`);
 
+        socket.onopen = () => {
 
-    socket.onmessage = (event) => {
+            console.log("✅ Connected");
+            isConnecting = false;
 
-    let data;
+            const btn = document.getElementById("sendBtn");
+            if(btn){
+                btn.disabled = false;
+                btn.innerText = "Send";
+            }
 
-    try{
-        data = JSON.parse(event.data);
-    }catch{
-        return;
+            // AUTO LOAD HISTORY
+            if(replyToken){
+
+                const savedDept = sessionStorage.getItem("replyDept");
+
+                if(savedDept){
+
+                    document.getElementById("department").value = savedDept;
+
+                    socket.send(JSON.stringify({
+                        chatType: "loadHistory",
+                        department: savedDept,
+                        replyToken: replyToken
+                    }));
+                }
+            }
+        };
+
+        socket.onerror = () => {
+            socket.close();
+        };
+
+        socket.onclose = () => {
+
+            console.log("⚠️ Reconnecting...");
+            isConnecting = false;
+
+            const btn = document.getElementById("sendBtn");
+            if(btn){
+                btn.disabled = true;
+                btn.innerText = "Reconnecting...";
+            }
+
+            setTimeout(connectSocket, 5000);
+        };
+
+        socket.onmessage = (event) => {
+
+            let data;
+            try{
+                data = JSON.parse(event.data);
+            }catch{
+                return;
+            }
+
+            const chatBox = document.getElementById("chatBox");
+            if(!chatBox) return;
+
+            // ================= HISTORY =================
+            if(data.chatType === "history"){
+
+                chatBox.innerHTML = "";
+
+                data.messages.forEach(m => {
+
+                    let text = m.message;
+
+                    try{
+                        const bytes = CryptoJS.AES.decrypt(text, "my_secret_key_123");
+                        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                        if(decrypted) text = decrypted;
+                    }catch{}
+
+                    const div = document.createElement("div");
+
+                    const unread =
+                        (m.from === "official" && !m.readByCitizen) ? " 🔴" : "";
+
+                    div.innerHTML = `
+                        <b>${m.from === "official" ? "Official" : "You"}</b>: 
+                        ${text}${unread}
+                        <span style="color:gray;font-size:0.8em;">
+                        (${new Date(m.timestamp).toLocaleTimeString()})
+                        </span>
+                    `;
+
+                    chatBox.appendChild(div);
+                });
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+                return;
+            }
+
+            // ================= NEW TOKEN =================
+            if(data.type === "newReplyToken"){
+
+                if(!sessionStorage.getItem("replyToken")){
+
+                    alert("⚠️ Save this Reply Token:\n\n" + data.replyToken);
+
+                    sessionStorage.setItem("replyToken", data.replyToken);
+
+                    const dept =
+                        document.getElementById("department").value;
+
+                    sessionStorage.setItem("replyDept", dept);
+
+                    replyToken = data.replyToken;
+
+                    if(replyEl) replyEl.textContent = replyToken;
+                }
+
+                return;
+            }
+
+            // ================= LIVE OFFICIAL MESSAGE =================
+            if(data.chatType === "otc" &&
+               replyToken &&
+               data.replyToken === replyToken){
+
+                let text = data.message;
+
+                try{
+                    const bytes = CryptoJS.AES.decrypt(text, "my_secret_key_123");
+                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+                    if(decrypted) text = decrypted;
+                }catch{}
+
+                const div = document.createElement("div");
+
+                div.innerHTML = `
+                    <b>Official [${data.department}]</b>: 
+                    ${text}
+                    <span style="color:gray;font-size:0.8em;">
+                    (${new Date(data.timestamp).toLocaleTimeString()})
+                    </span>
+                `;
+
+                chatBox.appendChild(div);
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // Mark as read
+                const savedDept = sessionStorage.getItem("replyDept");
+                if(savedDept){
+                    socket.send(JSON.stringify({
+                        chatType: "loadHistory",
+                        department: savedDept,
+                        replyToken: replyToken
+                    }));
+                }
+            }
+        };
     }
 
-    // ✅ NEW: Handle first-time reply token
-    if(data.type === "newReplyToken"){
-
-        if(!sessionStorage.getItem("replyToken")){
-            alert("⚠️ Save this Reply Token:\n\n" + data.replyToken);
-            sessionStorage.setItem("replyToken", data.replyToken);
-            replyToken = data.replyToken;
-
-            const replyEl = document.getElementById("replyToken");
-            if(replyEl) replyEl.textContent = replyToken;
-        }
-
-        return;
-    }
-
-    // ✅ Only show replies matching token
-    if(!replyToken || data.replyToken !== replyToken)
-        return;
-
-    const chatBox = document.getElementById("chatBox");
-    if(!chatBox) return;
-
-    const div = document.createElement("div");
-
-    const time = new Date(data.timestamp)
-        .toLocaleTimeString();
-
-    let text = data.message;
-
-// Try decrypt
-try {
-    const bytes = CryptoJS.AES.decrypt(text, "my_secret_key_123");
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    if (decrypted) text = decrypted;
-} catch {}
-
-div.innerHTML =
-`<b>Official [${data.department}]</b>: 
-${text}
-<span style="color:gray;font-size:0.8em;">
-(${new Date(data.timestamp).toLocaleTimeString()})
-</span>`;
-
-
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-};
-
-}
-
-
+    // CONNECT
     connectSocket();
-
-
 
     // ==============================
     // Send Citizen → Official
@@ -215,49 +237,64 @@ ${text}
         if(!input || !input.value.trim())
             return alert("Enter a message!");
 
-       if(!socket || socket.readyState !== WebSocket.OPEN){
-
-    alert("Secure connection not ready yet...");
-    return;
-}
-
+        if(!socket || socket.readyState !== WebSocket.OPEN)
+            return alert("Secure connection not ready yet...");
 
         const message = input.value.trim();
         const timestamp = Date.now();
 
-        const payload = {
-
+        socket.send(JSON.stringify({
             chatType: "cto",
-
-            // rotating mask
             sender: anonymousId,
-
-            // TRUE routing identity
             replyToken: replyToken || null,
-
             department: dept,
             message,
             timestamp
-        };
+        }));
 
-        socket.send(JSON.stringify(payload));
-
-
-        // Local display
         const chatBox = document.getElementById("chatBox");
 
         const div = document.createElement("div");
 
-        div.innerHTML =
-        `<b>You [${dept}]</b>: ${message}
-        <span style="color:gray;font-size:0.8em;">
-        (${new Date(timestamp).toLocaleTimeString()})
-        </span>`;
+        div.innerHTML = `
+            <b>You [${dept}]</b>: ${message}
+            <span style="color:gray;font-size:0.8em;">
+            (${new Date(timestamp).toLocaleTimeString()})
+            </span>
+        `;
 
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
 
         input.value="";
     };
+// ==============================
+// 🔵 Manual Check Using Reply Token
+// ==============================
+
+window.checkMessages = function(){
+
+    const tokenInput = document.getElementById("checkTokenInput");
+    const dept = document.getElementById("department").value;
+
+    if(!tokenInput.value.trim())
+        return alert("Enter your Reply Token!");
+
+    if(!socket || socket.readyState !== WebSocket.OPEN)
+        return alert("Not connected yet...");
+
+    const enteredToken = tokenInput.value.trim();
+
+    sessionStorage.setItem("replyToken", enteredToken);
+    sessionStorage.setItem("replyDept", dept);
+
+    replyToken = enteredToken;
+
+    socket.send(JSON.stringify({
+        chatType: "loadHistory",
+        department: dept,
+        replyToken: enteredToken
+    }));
+};
 
 });

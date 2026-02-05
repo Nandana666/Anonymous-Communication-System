@@ -35,37 +35,93 @@ document.addEventListener("DOMContentLoaded", () => {
     // 📩 Receive Citizen Messages
     socket.onmessage = (event) => {
 
-        let data;
-        try {
-            data = JSON.parse(event.data);
-        } catch {
-            return;
-        }
+    let data;
+    try {
+        data = JSON.parse(event.data);
+    } catch {
+        return;
+    }
 
-        // Only handle citizen → official messages
-        if (data.chatType !== "cto") return;
+    // ======================
+    // 🔵 LOAD HISTORY
+    // ======================
+    if(data.chatType === "history"){
+
+        chatBox.innerHTML = "";
+
+        data.messages.forEach(m => {
+
+            const div = document.createElement("div");
+
+            const unread =
+    (m.from === "citizen" && m.readByOfficial === false)
+    ? " 🔴"
+    : "";
+
+            div.innerHTML = `
+                <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
+                ${m.message}${unread}
+                <br><small>
+                (${new Date(m.timestamp).toLocaleTimeString()})
+                </small>
+            `;
+
+            chatBox.appendChild(div);
+        });
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return;
+    }
+
+    // ======================
+    // 🔵 LIVE Citizen Message
+    // ======================
+    if (data.chatType === "cto") {
+
+    const div = document.createElement("div");
+
+    div.style.border = "1px solid #ccc";
+    div.style.padding = "6px";
+    div.style.marginBottom = "6px";
+    div.style.cursor = "pointer";
+
+    // 🔴 Show unread indicator
+    div.innerHTML = `
+        <b>Citizen:</b> ${data.message} 🔴 <br>
+        <small>Reply Token: ${data.replyToken}</small>
+    `;
+
+    // When clicked → load full conversation
+    div.onclick = () => {
+
+        selectedReplyToken = data.replyToken;
+
+        socket.send(JSON.stringify({
+            chatType: "loadHistory",
+            department: department,
+            replyToken: selectedReplyToken
+        }));
+    };
+
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+
+    // ======================
+    // 🟢 Show Official Replies
+    // ======================
+    if(data.chatType === "otc"){
 
         const div = document.createElement("div");
-
-        div.style.border = "1px solid #ccc";
-        div.style.padding = "6px";
-        div.style.marginBottom = "6px";
-        div.style.cursor = "pointer";
-
-        div.innerHTML = `
-            <b>Citizen:</b> ${data.message} <br>
-            <small>Reply Token: ${data.replyToken}</small>
-        `;
-
-        // Click to select this conversation
-        div.onclick = () => {
-            selectedReplyToken = data.replyToken;
-            alert("Selected Reply Token:\n" + selectedReplyToken);
-        };
+        div.innerHTML = `<b>You:</b> ${data.message}`;
+        div.style.color = "green";
 
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
-    };
+    }
+};
+
 
     // 📤 Send Official Reply
     window.sendMessage = function () {
@@ -104,5 +160,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         input.value = "";
     };
+// ==============================
+// 🔵 Official Manual Load Using Reply Token
+// ==============================
+
+window.loadConversation = function(){
+
+    const tokenInput = document.getElementById("checkReplyToken");
+
+    if(!tokenInput || !tokenInput.value.trim())
+        return alert("Enter a Reply Token!");
+
+    if(!socket || socket.readyState !== WebSocket.OPEN)
+        return alert("Not connected yet...");
+
+    const enteredToken = tokenInput.value.trim();
+
+    selectedReplyToken = enteredToken;
+
+    socket.send(JSON.stringify({
+        chatType: "loadHistory",
+        department: department,
+        replyToken: enteredToken
+    }));
+};
+
 
 });

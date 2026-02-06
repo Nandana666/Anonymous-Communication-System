@@ -2,6 +2,8 @@ let socket = null;
 let isConnecting = false;
 
 document.addEventListener("DOMContentLoaded", () => {
+    sessionStorage.removeItem("replyToken");
+sessionStorage.removeItem("replyDept");
 
     // ==============================
     // Strong Random Generator (Tor Safe)
@@ -36,8 +38,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==============================
     let replyToken = sessionStorage.getItem("replyToken");
 
-    const replyEl = document.getElementById("replyToken");
-    if(replyEl) replyEl.textContent = replyToken;
+const replyEl = document.getElementById("replyToken");
+
+// Only show token if it exists
+if(replyEl){
+    replyEl.textContent = replyToken ? replyToken : "";
+}
+
 
     // ==============================
     // Clipboard
@@ -80,21 +87,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // AUTO LOAD HISTORY
-            if(replyToken){
+            // if(replyToken){
 
-                const savedDept = sessionStorage.getItem("replyDept");
+            //     const savedDept = sessionStorage.getItem("replyDept");
 
-                if(savedDept){
+            //     if(savedDept){
 
-                    document.getElementById("department").value = savedDept;
+            //         document.getElementById("department").value = savedDept;
 
-                    socket.send(JSON.stringify({
-                        chatType: "loadHistory",
-                        department: savedDept,
-                        replyToken: replyToken
-                    }));
-                }
-            }
+            //         socket.send(JSON.stringify({
+            //             chatType: "loadHistory",
+            //             department: savedDept,
+            //             replyToken: replyToken
+            //         }));
+            //     }
+            // }
         };
 
         socket.onerror = () => {

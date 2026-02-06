@@ -1,0 +1,20 @@
+{
+  "99fc9eb8499fc3067cefed97ce330fe3bd207375406edcf61dd1fd46425791b8": {
+    "department": "Police",
+    "createdAt": 1771166149844,
+    "messages": [
+      {
+        "from": "citizen",
+        "message": "good",
+        "timestamp": 1771166149331,
+        "readByOfficial": false
+      },
+      {
+        "from": "official",
+        "message": "U2FsdGVkX18Llt40rTydgK45PzehPYf2zdNASZDLIdE=",
+        "timestamp": 1771166213665,
+        "readByCitizen": true
+      }
+    ]
+  }
+}

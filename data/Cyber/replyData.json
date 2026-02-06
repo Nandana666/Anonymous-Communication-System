@@ -96,6 +96,12 @@
         "message": "U2FsdGVkX19yoru05hUCsK1xAdtLKg8u62SDnLcAhIo=",
         "timestamp": 1771061467787,
         "readByCitizen": true
+      },
+      {
+        "from": "official",
+        "message": "U2FsdGVkX1+hX0wPDnMUCGQ+Yr4wmVjHbCgxqAiXu9A=",
+        "timestamp": 1771165135277,
+        "readByCitizen": true
       }
     ]
   }

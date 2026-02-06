@@ -10,6 +10,11 @@
       "email": "b@gmail.com",
       "department": "Cyber",
       "accessKey": "af5c5aa93bea4798"
+    },
+    "c@gmail.com": {
+      "email": "c@gmail.com",
+      "department": "Police",
+      "accessKey": "ba7a45513ece6043"
     }
   }
 }

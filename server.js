@@ -356,11 +356,16 @@ if(socketPath === "/official"){
         let message;
         try { message = JSON.parse(raw); }
         catch { return; }
-        // ================= LOAD HISTORY =================
+// ================= LOAD HISTORY =================
 if (message.chatType === "loadHistory") {
 
     const dept = message.department?.trim();
     const replyToken = message.replyToken;
+    // Store replyToken on citizen socket
+if (ws.isCitizen) {
+    ws.replyToken = replyToken;
+}
+
 
     if (!dept || !departments[dept]) return;
 
@@ -373,15 +378,7 @@ if (message.chatType === "loadHistory") {
 
     if (!replyData[replyToken]) return;
 
-    // Send full history
-    ws.send(JSON.stringify({
-        chatType: "history",
-        department: dept,
-        replyToken,
-        messages: replyData[replyToken].messages
-    }));
-
-    // Mark messages as read
+    // ✅ FIRST mark messages as read
     replyData[replyToken].messages.forEach(msg => {
 
         if (ws.isOfficial && msg.from === "citizen") {
@@ -393,10 +390,20 @@ if (message.chatType === "loadHistory") {
         }
     });
 
+    // Save updated read flags
     fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
+
+    // ✅ THEN send updated history
+    ws.send(JSON.stringify({
+        chatType: "history",
+        department: dept,
+        replyToken,
+        messages: replyData[replyToken].messages
+    }));
 
     return;
 }
+
 
         // Citizen-to-official
         if (message.chatType === "cto") {
@@ -454,6 +461,10 @@ if(!replyToken){
 else if(!replyData[replyToken] || replyData[replyToken].department !== dept){
     console.log("Invalid or cross-department reply token attempt");
     return;
+}
+// Store replyToken on citizen socket
+if (ws.isCitizen) {
+    ws.replyToken = replyToken;
 }
 
 
@@ -576,13 +587,20 @@ if (message.chatType === "otc") {
 
     // Send reply to BOTH citizens and officials of that department
 wss.clients.forEach(client => {
+
     if (
         client.readyState === WebSocket.OPEN &&
         (
-            client.isCitizen ||
+            // ✅ Only correct citizen gets message
+            (client.isCitizen && client.replyToken === replyToken)
+
+            ||
+
+            // ✅ Officials of same department
             (client.isOfficial && client.department === dept)
         )
-    ) {
+    ) 
+ {
         client.send(JSON.stringify({
             chatType: "otc",
             department: dept,

@@ -246,7 +246,6 @@ if(socketPath === "/official"){
         return;
     }
 
-    // 🔐 VALIDATE OFFICIAL TOKEN
     const expiry = officialTokens.get(token);
 
     if(!token || !expiry || expiry < Date.now()){
@@ -257,12 +256,46 @@ if(socketPath === "/official"){
 
     ws.isOfficial = true;
     ws.department = dept;
-
     departments[dept].add(ws);
 
     console.log("✅ Official joined:", dept);
-    console.log("Officials inside:", departments[dept].size);
+
+    // ================= SEND PENDING UNREAD MESSAGES =================
+
+    const deptFolder = path.join(__dirname, "data", dept);
+    const replyFile = path.join(deptFolder, "replyData.json");
+
+    if (fs.existsSync(replyFile)) {
+
+        let replyData = JSON.parse(fs.readFileSync(replyFile));
+
+        Object.keys(replyData).forEach(replyToken => {
+
+            const convo = replyData[replyToken];
+
+            convo.messages
+                .filter(m => m.from === "citizen" && m.readByOfficial === false)
+                .forEach(unreadMsg => {
+
+                    ws.send(JSON.stringify({
+                        chatType: "cto",
+                        department: dept,
+                        replyToken: replyToken,
+                        message: unreadMsg.message,
+                        timestamp: unreadMsg.timestamp
+                    }));
+
+                    unreadMsg.readByOfficial = true;
+
+                });
+
+        });
+
+        fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
+    }
 }
+
+
 
 
 
@@ -362,9 +395,8 @@ if (message.chatType === "loadHistory") {
     const dept = message.department?.trim();
     const replyToken = message.replyToken;
     // Store replyToken on citizen socket
-if (ws.isCitizen) {
-    ws.replyToken = replyToken;
-}
+// Store replyToken for BOTH citizen and official
+ws.replyToken = replyToken;
 
 
     if (!dept || !departments[dept]) return;

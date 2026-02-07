@@ -47,31 +47,37 @@ document.addEventListener("DOMContentLoaded", () => {
     // ======================
     if(data.chatType === "history"){
 
-        chatBox.innerHTML = "";
+    chatBox.innerHTML = "";   // clear old preview messages
 
-        data.messages.forEach(m => {
-
-            const div = document.createElement("div");
-
-            const unread =
-    (m.from === "citizen" && m.readByOfficial === false)
-    ? " 🔴"
-    : "";
-
-            div.innerHTML = `
-                <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
-                ${m.message}${unread}
-                <br><small>
-                (${new Date(m.timestamp).toLocaleTimeString()})
-                </small>
-            `;
-
-            chatBox.appendChild(div);
-        });
-
-        chatBox.scrollTop = chatBox.scrollHeight;
+    if(!data.messages || data.messages.length === 0){
+        chatBox.innerHTML = "<b>No messages found for this Reply Token.</b>";
         return;
     }
+
+    data.messages.forEach(m => {
+
+        const div = document.createElement("div");
+
+        const unread =
+            (m.from === "citizen" && m.readByOfficial === false)
+            ? " 🔴"
+            : "";
+
+        div.innerHTML = `
+            <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
+            ${m.message}${unread}
+            <br><small>
+            (${new Date(m.timestamp).toLocaleTimeString()})
+            </small>
+        `;
+
+        chatBox.appendChild(div);
+    });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+    return;
+}
+
 
     // ======================
     // 🔵 LIVE Citizen Message

@@ -108,9 +108,44 @@ ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
 
     // Only handle cto or otc
-    if(msg.chatType !== "cto" && msg.chatType !== "otc") return;
+    //if(msg.chatType !== "cto" && msg.chatType !== "otc") return;
 
     const messagesEl = document.getElementById("messages");
+    // ======================
+// 🟣 LOAD FULL HISTORY
+// ======================
+if(msg.chatType === "history"){
+
+    messagesEl.innerHTML = "";
+
+    if(!msg.messages || msg.messages.length === 0){
+        messagesEl.innerHTML = "<b>No conversation found for this token.</b>";
+        return;
+    }
+
+    msg.messages.forEach(m => {
+
+        let text = m.message;
+
+        try{
+            const bytes = CryptoJS.AES.decrypt(text, AES_KEY);
+            const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+            if(decrypted) text = decrypted;
+        }catch{}
+
+        messagesEl.innerHTML += `
+            <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
+            ${text}
+            <br><small>
+            (${new Date(m.timestamp).toLocaleTimeString()})
+            </small><br><br>
+        `;
+    });
+
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return;
+}
+
 
     let text = msg.message;
 
@@ -174,6 +209,23 @@ function sendMessage(){
     }));
 
     input.value="";
+}
+function loadConversation(){
+
+    const tokenInput = document.getElementById("checkReplyToken");
+
+    if(!tokenInput || !tokenInput.value.trim())
+        return alert("Enter a Reply Token!");
+
+    const enteredToken = tokenInput.value.trim();
+
+    currentReplyToken = enteredToken;
+
+    ws.send(JSON.stringify({
+        chatType: "loadHistory",
+        department: DEPT,
+        replyToken: enteredToken
+    }));
 }
 
 

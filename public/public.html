@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Public Chat</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Anonymous Public Chat</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f4f4f4; }
+        .id-bar { background: #111; color: #00ff99; padding: 10px; text-align: center; font-weight: bold; margin-bottom: 20px; }
+        .chat-box { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin-bottom: 10px; background: #fff; }
+        input { padding: 5px; width: 70%; margin-right: 5px; }
+        button { padding: 5px 10px; }
+    </style>
 </head>
 <body>
 
-    <!-- 🔐 Anonymous ID Display -->
-    <div style="background:#111; color:#00ff99; padding:10px; text-align:center;">
+    <div class="id-bar">
         Your Anonymous ID: <span id="anonId"></span>
     </div>
 
     <h2>Public Chat</h2>
-
     <div id="messages" class="chat-box"></div>
-
     <input type="text" id="messageInput" placeholder="Type message">
     <button onclick="sendPublicMessage()">Send</button>
 

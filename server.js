@@ -733,18 +733,42 @@ if (message.chatType === "private") {
     });
 
     ws.on("close", () => {
-        // Remove from secure private room
-if (ws.secureRoom && securePrivateRooms.has(ws.secureRoom)) {
 
-    const roomSet = securePrivateRooms.get(ws.secureRoom);
+    if (!ws.secureRoom) return;
+
+    const room = ws.secureRoom;
+
+    if (!securePrivateRooms.has(room)) return;
+
+    const roomSet = securePrivateRooms.get(room);
+
     roomSet.delete(ws);
 
-    if (roomSet.size === 0) {
-        securePrivateRooms.delete(ws.secureRoom);
+    console.log("User left room:", room, "Remaining:", roomSet.size);
+
+    if (roomSet.size === 1) {
+
+        roomSet.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+
+                client.send(JSON.stringify({
+                    type: "peer-disconnected"
+                }));
+
+                // 🔥 Force close remaining socket after sending
+                setTimeout(() => {
+                    try { client.close(); } catch {}
+                }, 100);
+            }
+        });
+
+        securePrivateRooms.delete(room);
     }
-}
-        Object.values(departments).forEach(set => set.delete(ws));
-    });
+
+    if (roomSet.size === 0) {
+        securePrivateRooms.delete(room);
+    }
+});
 });
 
 

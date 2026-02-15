@@ -147,12 +147,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     socket.onmessage = async (event) => {
 
         let data;
+        
         try {
             data = JSON.parse(event.data);
         } catch {
             return;
         }
+        // 🔴 Peer disconnected handler
+if (data.type === "peer-disconnected") {
 
+    alert("Secure partner disconnected.");
+
+    verified = false;
+    sharedKey = null;
+    sessionKeyPair = null;
+
+    socket.close(); // optional but clean
+    window.location.href = "index.html";
+    return;
+}
         // Public Chat
         if(data.chatType === "public") {
             const messages = document.getElementById("messages");

@@ -59,6 +59,8 @@ const officialTokens = new Map();
 
 
 const privateRooms = new Map();
+// 🔐 Strict 2-User Secure Private Rooms
+const securePrivateRooms = new Map();
 const departments = {
     Police: new Set(),
     Cyber: new Set(),
@@ -644,13 +646,103 @@ wss.clients.forEach(client => {
 });
 
 }
+// ====================================================
+// 🔐 STRICT 2-USER SECURE PRIVATE ROOM
+// ====================================================
 
+// Join private secure room
+if (message.type === "join-private") {
+
+    const room = message.room;
+    if (!room) return;
+
+    if (!securePrivateRooms.has(room)) {
+        securePrivateRooms.set(room, new Set());
+    }
+
+    const roomSet = securePrivateRooms.get(room);
+
+    // Reject if already 2 users
+    if (roomSet.size >= 2) {
+        ws.send(JSON.stringify({
+            type: "room-full"
+        }));
+        return;
+    }
+
+    roomSet.add(ws);
+    ws.secureRoom = room;
+
+    ws.send(JSON.stringify({
+        type: "room-joined",
+        count: roomSet.size
+    }));
+
+    // 🔥 IMPORTANT FIX
+    // If now 2 users, trigger handshake start
+    if (roomSet.size === 2) {
+        roomSet.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: "start-handshake"
+                }));
+            }
+        });
+    }
+
+    return;
+}
+// Relay signed ECDH
+if (message.type === "signed-ecdh") {
+
+    const room = message.room;
+    if (!room || !securePrivateRooms.has(room)) return;
+
+    const roomSet = securePrivateRooms.get(room);
+
+    roomSet.forEach(client => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(message));
+        }
+    });
+
+    return;
+}
+
+// Relay encrypted private message
+if (message.chatType === "private") {
+
+    const room = message.room;
+    if (!room || !securePrivateRooms.has(room)) return;
+
+    const roomSet = securePrivateRooms.get(room);
+
+    if (roomSet.size !== 2) return;
+
+    roomSet.forEach(client => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(message));
+        }
+    });
+
+    return;
+}
         // 🔵 NOTE:
         // Your public/private chat is handled inside chat.js
         // No change required here.
     });
 
     ws.on("close", () => {
+        // Remove from secure private room
+if (ws.secureRoom && securePrivateRooms.has(ws.secureRoom)) {
+
+    const roomSet = securePrivateRooms.get(ws.secureRoom);
+    roomSet.delete(ws);
+
+    if (roomSet.size === 0) {
+        securePrivateRooms.delete(ws.secureRoom);
+    }
+}
         Object.values(departments).forEach(set => set.delete(ws));
     });
 });

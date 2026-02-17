@@ -68,6 +68,9 @@ const departments = {
     Health: new Set()
 };
 
+// 🔐 Store department public keys
+const departmentPublicKeys = {};
+
 // --------------------
 // Admin REST APIs
 // --------------------
@@ -224,6 +227,21 @@ app.post("/api/official/login", (req, res) => {
 
     });
 });
+// 🔐 Provide department public key to citizens
+app.get("/api/department-key", (req, res) => {
+
+    const dept = req.query.department?.trim();
+    if (!dept) return res.json({ publicKey: null });
+
+    const keyFile = path.join(__dirname, "data", dept, "publicKey.json");
+
+    if (fs.existsSync(keyFile)) {
+        const stored = JSON.parse(fs.readFileSync(keyFile));
+        return res.json({ publicKey: stored.publicKey });
+    }
+
+    return res.json({ publicKey: null });
+});
 // --------------------
 // ✅ Unified WebSocket (FIXES MAJOR BUG)
 // --------------------
@@ -271,27 +289,27 @@ if(socketPath === "/official"){
 
         let replyData = JSON.parse(fs.readFileSync(replyFile));
 
-        Object.keys(replyData).forEach(replyToken => {
+        const conversations = [];
 
-            const convo = replyData[replyToken];
+Object.keys(replyData).forEach(replyToken => {
 
-            convo.messages
-                .filter(m => m.from === "citizen" && m.readByOfficial === false)
-                .forEach(unreadMsg => {
+    const convo = replyData[replyToken];
 
-                    ws.send(JSON.stringify({
-                        chatType: "cto",
-                        department: dept,
-                        replyToken: replyToken,
-                        message: unreadMsg.message,
-                        timestamp: unreadMsg.timestamp
-                    }));
+    const unreadCount = convo.messages.filter(
+        m => m.from === "citizen" && m.readByOfficial === false
+    ).length;
 
-                    unreadMsg.readByOfficial = true;
+    conversations.push({
+        replyToken,
+        lastMessageTime: convo.messages[convo.messages.length - 1]?.timestamp,
+        unreadCount
+    });
+});
 
-                });
-
-        });
+ws.send(JSON.stringify({
+    type: "conversationList",
+    conversations
+}));
 
         fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
     }
@@ -391,6 +409,29 @@ if(socketPath === "/official"){
         let message;
         try { message = JSON.parse(raw); }
         catch { return; }
+// ================= SAVE DEPARTMENT PUBLIC KEY =================
+if (message.type === "departmentPublicKey") {
+
+    if (!message.department || !message.publicKey) return;
+
+    const dept = message.department.trim();
+
+    const deptFolder = path.join(__dirname, "data", dept);
+    if (!fs.existsSync(deptFolder)) {
+        fs.mkdirSync(deptFolder, { recursive: true });
+    }
+
+    const keyFile = path.join(deptFolder, "publicKey.json");
+
+    fs.writeFileSync(keyFile, JSON.stringify({
+        publicKey: message.publicKey,
+        updatedAt: Date.now()
+    }, null, 2));
+
+    console.log("🔐 Public key saved for", dept);
+
+    return;
+}
 // ================= LOAD HISTORY =================
 if (message.chatType === "loadHistory") {
 
@@ -427,13 +468,14 @@ ws.replyToken = replyToken;
     // Save updated read flags
     fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
 
-    // ✅ THEN send updated history
-    ws.send(JSON.stringify({
-        chatType: "history",
-        department: dept,
-        replyToken,
-        messages: replyData[replyToken].messages
-    }));
+   // ✅ THEN send updated history (INCLUDING citizen key)
+ws.send(JSON.stringify({
+    chatType: "history",
+    department: dept,
+    replyToken,
+    citizenPublicKey: replyData[replyToken].citizenPublicKey,
+    messages: replyData[replyToken].messages
+}));
 
     return;
 }
@@ -501,12 +543,17 @@ if (ws.isCitizen) {
     ws.replyToken = replyToken;
 }
 
+// 🔐 Store citizen public key once per conversation
+if (!replyData[replyToken].citizenPublicKey) {
+    replyData[replyToken].citizenPublicKey = message.citizenPublicKey;
+}
 
-
-// ---------- Store Message ----------
+// ---------- Store Encrypted Message ----------
 replyData[replyToken].messages.push({
     from: "citizen",
-    message: message.message,
+    ciphertext: message.ciphertext,
+    iv: message.iv,
+    citizenPublicKey: message.citizenPublicKey, // important for ECDH
     timestamp: message.timestamp,
     readByOfficial: false
 });
@@ -520,7 +567,7 @@ const previousHash = previousBlock ? previousBlock.hash : "0";
 
 const dataHash = crypto
     .createHash("sha256")
-    .update(message.timestamp + message.message + replyToken + dept)
+    .update(message.timestamp + message.ciphertext + replyToken + dept)
     .digest("hex");
 
 const block = {
@@ -547,12 +594,14 @@ departments[dept].forEach(client => {
         client.isOfficial
     ){
         client.send(JSON.stringify({
-            chatType: "cto",
-            department: dept,
-            message: message.message,
-            timestamp: message.timestamp,
-            replyToken: replyToken
-        }));
+    chatType: "cto",
+    department: dept,
+    ciphertext: message.ciphertext,
+    iv: message.iv,
+    citizenPublicKey: message.citizenPublicKey,
+    timestamp: message.timestamp,
+    replyToken: replyToken
+}));
     }
 });
 
@@ -562,7 +611,7 @@ departments[dept].forEach(client => {
         }
 // ================= OFFICIAL → CITIZEN =================
 if (message.chatType === "otc") {
-
+    
     const dept = message.department?.trim();
     const replyToken = message.replyToken;
 
@@ -577,30 +626,33 @@ if (message.chatType === "otc") {
     let replyData = JSON.parse(fs.readFileSync(replyFile));
     let chain = JSON.parse(fs.readFileSync(blockchainFile));
 
-    // Validate reply token
     if (!replyData[replyToken] || replyData[replyToken].department !== dept) {
         console.log("Invalid reply token for official reply");
         return;
     }
-
-    // Store official reply
+    // 🔐 Save official public key once per conversation
+if (!replyData[replyToken].officialPublicKey && message.officialPublicKey) {
+    replyData[replyToken].officialPublicKey = message.officialPublicKey;
+}
+    // ✅ Store ciphertext AS RECEIVED (TRUE E2EE)
     replyData[replyToken].messages.push({
     from: "official",
-    message: message.message,
+    ciphertext: message.ciphertext,
+    iv: message.iv,
+    officialPublicKey: message.officialPublicKey, // 🔐 important
     timestamp: message.timestamp,
     readByCitizen: false
 });
 
-
     fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
 
-    // Add block to blockchain
+    // Blockchain (unchanged logic, but use message.ciphertext)
     const previousBlock = chain[chain.length - 1];
     const previousHash = previousBlock ? previousBlock.hash : "0";
 
     const dataHash = crypto
         .createHash("sha256")
-        .update(message.timestamp + message.message + replyToken + dept)
+        .update(message.timestamp + message.ciphertext + replyToken + dept)
         .digest("hex");
 
     const block = {
@@ -616,36 +668,31 @@ if (message.chatType === "otc") {
         .digest("hex");
 
     chain.push(block);
-
     fs.writeFileSync(blockchainFile, JSON.stringify(chain, null, 2));
 
-    // Send reply to BOTH citizens and officials of that department
-wss.clients.forEach(client => {
+    // Relay to correct citizen + officials
+    wss.clients.forEach(client => {
 
-    if (
-        client.readyState === WebSocket.OPEN &&
-        (
-            // ✅ Only correct citizen gets message
-            (client.isCitizen && client.replyToken === replyToken)
-
-            ||
-
-            // ✅ Officials of same department
-            (client.isOfficial && client.department === dept)
-        )
-    ) 
- {
-        client.send(JSON.stringify({
-            chatType: "otc",
-            department: dept,
-            replyToken,
-            message: message.message,
-            timestamp: message.timestamp
-        }));
-    }
-});
-
+        if (
+            client.readyState === WebSocket.OPEN &&
+            (
+                (client.isCitizen && client.replyToken === replyToken) ||
+                (client.isOfficial && client.department === dept)
+            )
+        ) {
+            client.send(JSON.stringify({
+    chatType: "otc",
+    department: dept,
+    replyToken,
+    ciphertext: message.ciphertext,
+    iv: message.iv,
+    officialPublicKey: message.officialPublicKey, // 🔐 forward it
+    timestamp: message.timestamp
+}));
+        }
+    });
 }
+
 // ====================================================
 // 🔐 STRICT 2-USER SECURE PRIVATE ROOM
 // ====================================================

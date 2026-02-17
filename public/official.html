@@ -1,27 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Official Chat</title>
-  <style>
-    body{font-family:Arial; margin:20px;}
-    .messages{
-        border:1px solid #ccc;
-        height:400px;
-        overflow-y:scroll;
-        padding:5px;
-        margin-bottom:10px;
-    }
-    input{width:70%; padding:5px;}
-    button{padding:5px 10px;}
-  </style>
+<meta charset="UTF-8">
+<title>Official Chat (True E2EE)</title>
+<style>
+body{font-family:Arial;margin:20px;}
+.messages{
+border:1px solid #ccc;
+height:400px;
+overflow-y:scroll;
+padding:5px;
+margin-bottom:10px;
+}
+input{width:70%;padding:5px;}
+button{padding:5px 10px;}
+.convo-list{
+border:1px solid #aaa;
+padding:10px;
+margin-bottom:15px;
+max-height:200px;
+overflow-y:auto;
+}
+.convo-item{
+padding:5px;
+cursor:pointer;
+border-bottom:1px solid #eee;
+}
+.convo-item:hover{
+background:#f2f2f2;
+}
+</style>
 </head>
 
 <body>
 
 <script>
-// 🔐 HARD LOGIN PROTECTION (RUNS FIRST)
-
+// 🔐 LOGIN PROTECTION
 const TOKEN = localStorage.getItem("JWT_TOKEN");
 const DEPT  = localStorage.getItem("DEPARTMENT");
 
@@ -31,210 +45,343 @@ if(!TOKEN || !DEPT){
 }
 </script>
 
-
-<h2>Official Chat</h2>
-<button onclick="logout()">Logout</button><br><br>
+<h2>Official Chat (True E2EE)</h2>
+<button onclick="logout()">Logout</button>
 <hr>
 
-<h3>Check Citizen Conversation</h3>
+<h3>Conversations</h3>
+<div class="convo-list" id="conversationList"></div>
 
-<input type="text" id="checkReplyToken"
-       placeholder="Enter Reply Token to view conversation"
-       style="width:70%; padding:5px;">
-
-<button onclick="loadConversation()">Load Messages</button>
-
-<br><br>
-
+<h3>Messages</h3>
 <div class="messages" id="messages"></div>
 
 <label>Reply Token:</label>
-<input id="replyTokenInput" placeholder="Enter reply token here..." style="width:70%; padding:5px;">
+<input id="replyTokenInput" placeholder="Reply token..." />
 <br><br>
 
-<input id="msg" placeholder="Reply to citizen...">
+<input id="msg" placeholder="Reply to citizen..." />
 <button onclick="sendMessage()">Send</button>
-
-
-
-<script src="js/crypto-js.js"></script>
 
 <script>
 
 let ws;
+let departmentPrivateKey;
+let departmentPublicKeyHex;
+let conversationPublicKeys = {};
 let currentReplyToken = null;
-const AES_KEY = "my_secret_key_123";
 
-// ✅ WebSocket connection
-//ws = new WebSocket(`ws://${location.host}/official?token=${TOKEN}&dept=${DEPT}`);
+// --------------------
+// CONNECT WEBSOCKET
+// --------------------
 const protocol = location.protocol === "https:" ? "wss:" : "ws:";
 ws = new WebSocket(`${protocol}//${location.host}/official?token=${TOKEN}&dept=${DEPT}`);
 
+ws.onopen = async () => {
 
-ws.onopen = () => {
-    console.log("✅ Connected as official");
+    console.log("Official connected");
+
+    const publicKeyHex = await initDepartmentKey();
+
+    // 🔥 SEND PUBLIC KEY TO SERVER
+    ws.send(JSON.stringify({
+        type: "departmentPublicKey",
+        department: DEPT,
+        publicKey: publicKeyHex
+    }));
 };
 
-// ws.onmessage = (e) => {
-
-//     const msg = JSON.parse(e.data);
-
-//     // Only handle citizen → official
-//     if(msg.chatType !== "cto") return;
-
-//     const messagesEl = document.getElementById("messages");
-
-//     let text = msg.message;
-
-//     // Try decrypt
-//     try{
-//         const bytes = CryptoJS.AES.decrypt(text, AES_KEY);
-//         const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-//         if(decrypted) text = decrypted;
-//     }catch{}
-
-//     messagesEl.innerHTML += `
-//         <b>[${msg.department}] Citizen:</b> ${text}<br>
-//         <small>Reply Token: ${msg.replyToken}</small><br><br>
-//     `;
-
-//     messagesEl.scrollTop = messagesEl.scrollHeight;
-
-//     currentReplyToken = msg.replyToken; // select latest
-// };
-
-ws.onmessage = (e) => {
+// --------------------
+// RECEIVE MESSAGE
+// --------------------
+ws.onmessage = async (e) => {
 
     const msg = JSON.parse(e.data);
 
-    // Only handle cto or otc
-    //if(msg.chatType !== "cto" && msg.chatType !== "otc") return;
-
-    const messagesEl = document.getElementById("messages");
-    // ======================
-// 🟣 LOAD FULL HISTORY
-// ======================
-if(msg.chatType === "history"){
-
-    messagesEl.innerHTML = "";
-
-    if(!msg.messages || msg.messages.length === 0){
-        messagesEl.innerHTML = "<b>No conversation found for this token.</b>";
+    // Conversation list (WhatsApp style)
+    if(msg.type === "conversationList"){
+        renderConversationList(msg.conversations);
         return;
     }
 
-    msg.messages.forEach(m => {
+    const messagesEl = document.getElementById("messages");
 
-        let text = m.message;
+    // History load
+    if(msg.chatType === "history"){
 
-        try{
-            const bytes = CryptoJS.AES.decrypt(text, AES_KEY);
-            const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-            if(decrypted) text = decrypted;
-        }catch{}
+    messagesEl.innerHTML = "";
 
-        messagesEl.innerHTML += `
-            <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
-            ${text}
-            <br><small>
-            (${new Date(m.timestamp).toLocaleTimeString()})
-            </small><br><br>
-        `;
-    });
+    // 🔥 FIRST PASS — collect citizen public key
+    // 🔐 Get citizen key from conversation root
+// 🔐 Store citizen key sent from server
+if(msg.citizenPublicKey){
+    conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
+}
+
+    // 🔥 SECOND PASS — decrypt safely
+    // 🔥 SECOND PASS — decrypt safely
+for(const m of msg.messages){
+
+    // 🔐 VERY IMPORTANT FIX
+    m.replyToken = msg.replyToken;
+
+    let text;
+
+    try {
+        text = await decryptMessage(m);
+    } catch(err) {
+        console.log("Decryption failed:", err);
+        text = "[Decryption Failed]";
+    }
+
+    messagesEl.innerHTML += `
+        <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
+        ${text}
+        <br><small>${new Date(m.timestamp).toLocaleTimeString()}</small><br><br>
+    `;
+}
 
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return;
 }
 
-
-    let text = msg.message;
-
-    // Try decrypt
-    try{
-        const bytes = CryptoJS.AES.decrypt(text, AES_KEY);
-        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-        if(decrypted) text = decrypted;
-    }catch{}
-
-    // 🔵 Citizen → Official
+    // Live message
     if(msg.chatType === "cto"){
 
-    messagesEl.innerHTML += `
-        <b>[${msg.department}] Citizen:</b> ${text}<br>
-        <small>Reply Token: ${msg.replyToken}</small><br><br>
-    `;
+        if(msg.citizenPublicKey){
+            conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
+        }
 
-    currentReplyToken = msg.replyToken;
+        const text = await decryptMessage(msg);
 
-    // ✅ Auto-fill input field
-    const tokenInput = document.getElementById("replyTokenInput");
-    if(tokenInput) tokenInput.value = msg.replyToken;
-}
+        messagesEl.innerHTML += `
+            <b>${msg.chatType === "cto" ? "Citizen" : "You"}:</b>
+            ${text}
+            <br><small>${new Date(msg.timestamp).toLocaleTimeString()}</small><br><br>
+        `;
 
-    // 🟢 Official → Citizen (show own reply)
-    if(msg.chatType === "otc"){
+        messagesEl.scrollTop = messagesEl.scrollHeight;
 
-    messagesEl.innerHTML += `
-        <b>You [${msg.department}]</b>: ${text}
-        <span style="color:gray;font-size:0.8em;">
-        (${new Date(msg.timestamp).toLocaleTimeString()})
-        </span><br><br>
-    `;
-}
-
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+        currentReplyToken = msg.replyToken;
+        document.getElementById("replyTokenInput").value = msg.replyToken;
+    }
 };
 
-function sendMessage(){
+// --------------------
+// SEND MESSAGE
+// --------------------
+async function sendMessage(){
 
     const input = document.getElementById("msg");
-    const tokenInput = document.getElementById("replyTokenInput");
+    const replyToken = document.getElementById("replyTokenInput").value.trim();
 
-    const manualToken = tokenInput.value.trim();
+    if(!input.value.trim()) return;
+    if(!replyToken) return alert("Select conversation first!");
 
-    if(!input.value.trim())
-        return alert("Enter a message!");
+    const citizenPublicKeyHex = conversationPublicKeys[replyToken];
+    if(!citizenPublicKeyHex) return alert("No key found for this conversation.");
 
-    if(!manualToken)
-        return alert("Enter a Reply Token!");
+    const citizenPublicKey = await crypto.subtle.importKey(
+        "raw",
+        hexToBuffer(citizenPublicKeyHex),
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        []
+    );
 
-    const encrypted = CryptoJS.AES.encrypt(input.value, AES_KEY).toString();
+    const sharedSecret = await crypto.subtle.deriveBits(
+        { name: "ECDH", public: citizenPublicKey },
+        departmentPrivateKey,
+        256
+    );
+
+    const aesKey = await crypto.subtle.importKey(
+        "raw",
+        await crypto.subtle.digest("SHA-256", sharedSecret),
+        { name: "AES-GCM" },
+        false,
+        ["encrypt"]
+    );
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        aesKey,
+        new TextEncoder().encode(input.value)
+    );
 
     ws.send(JSON.stringify({
-        chatType: "otc",
-        replyToken: manualToken,   // ✅ use manual field
-        department: DEPT,
-        message: encrypted,
-        timestamp: Date.now()
-    }));
+    chatType: "otc",
+    department: DEPT,
+    replyToken,
+    ciphertext: bufferToHex(encrypted),
+    iv: bufferToHex(iv),
+    officialPublicKey: localStorage.getItem("DEPT_PUBLIC_KEY_" + DEPT),
+    timestamp: Date.now()
+}));
+    const messagesEl = document.getElementById("messages");
 
+messagesEl.innerHTML += `
+    <b>You:</b> ${input.value}
+    <br><small>${new Date().toLocaleTimeString()}</small><br><br>
+`;
+
+messagesEl.scrollTop = messagesEl.scrollHeight;
     input.value="";
 }
-function loadConversation(){
 
-    const tokenInput = document.getElementById("checkReplyToken");
+// --------------------
+// DECRYPT MESSAGE
+// --------------------
+async function decryptMessage(data){
 
-    if(!tokenInput || !tokenInput.value.trim())
-        return alert("Enter a Reply Token!");
+    if(!data.ciphertext) return "[Invalid]";
 
-    const enteredToken = tokenInput.value.trim();
+    const citizenPublicKeyHex =
+    data.citizenPublicKey ||
+    conversationPublicKeys[data.replyToken];
+    if(!citizenPublicKeyHex) return "[Missing Key]";
 
-    currentReplyToken = enteredToken;
+    const citizenPublicKey = await crypto.subtle.importKey(
+        "raw",
+        hexToBuffer(citizenPublicKeyHex),
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        []
+    );
+
+    const sharedSecret = await crypto.subtle.deriveBits(
+        { name: "ECDH", public: citizenPublicKey },
+        departmentPrivateKey,
+        256
+    );
+
+    const aesKey = await crypto.subtle.importKey(
+        "raw",
+        await crypto.subtle.digest("SHA-256", sharedSecret),
+        { name: "AES-GCM" },
+        false,
+        ["decrypt"]
+    );
+
+    const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: hexToBuffer(data.iv) },
+        aesKey,
+        hexToBuffer(data.ciphertext)
+    );
+
+    return new TextDecoder().decode(decrypted);
+}
+
+// --------------------
+// PERSISTENT DEPARTMENT KEY
+// --------------------
+async function initDepartmentKey(){
+
+    const storedPrivate = localStorage.getItem("DEPT_PRIVATE_KEY_" + DEPT);
+    const storedPublic  = localStorage.getItem("DEPT_PUBLIC_KEY_" + DEPT);
+
+    if(storedPrivate && storedPublic){
+
+        departmentPrivateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            hexToBuffer(storedPrivate),
+            { name: "ECDH", namedCurve: "P-256" },
+            false,
+            ["deriveBits"]
+        );
+
+        return storedPublic;
+    }
+
+    const keyPair = await crypto.subtle.generateKey(
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        ["deriveBits"]
+    );
+
+    departmentPrivateKey = keyPair.privateKey;
+
+    const privateRaw = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+    const publicRaw  = await crypto.subtle.exportKey("raw", keyPair.publicKey);
+
+    const privateHex = bufferToHex(privateRaw);
+    const publicHex  = bufferToHex(publicRaw);
+
+    localStorage.setItem("DEPT_PRIVATE_KEY_" + DEPT, privateHex);
+localStorage.setItem("DEPT_PUBLIC_KEY_" + DEPT, publicHex);
+
+    return publicHex;
+}
+
+// --------------------
+// CONVERSATION LIST
+// --------------------
+function renderConversationList(conversations){
+
+    const listEl = document.getElementById("conversationList");
+    listEl.innerHTML = "";
+
+    conversations.sort((a,b) => b.lastMessageTime - a.lastMessageTime);
+
+    conversations.forEach(c => {
+
+        const div = document.createElement("div");
+        div.className = "convo-item";
+
+        div.innerHTML = `
+            <b>${c.replyToken.substring(0,10)}...</b>
+            <br>
+            Unread: ${c.unreadCount}
+        `;
+
+        div.onclick = () => {
+            loadConversation(c.replyToken);
+        };
+
+        listEl.appendChild(div);
+    });
+}
+
+// --------------------
+// LOAD HISTORY
+// --------------------
+function loadConversation(replyToken){
+
+    document.getElementById("replyTokenInput").value = replyToken;
 
     ws.send(JSON.stringify({
         chatType: "loadHistory",
         department: DEPT,
-        replyToken: enteredToken
+        replyToken
     }));
 }
 
-
-
+// --------------------
+// LOGOUT
+// --------------------
 function logout(){
+    ws.close();
     localStorage.removeItem("JWT_TOKEN");
     localStorage.removeItem("DEPARTMENT");
-    if(ws) ws.close();
     window.location.href="login.html";
+}
+
+// --------------------
+// HELPERS
+// --------------------
+function bufferToHex(buffer){
+    return [...new Uint8Array(buffer)]
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+}
+
+function hexToBuffer(hex){
+    const bytes = new Uint8Array(hex.length / 2);
+    for(let i = 0; i < bytes.length; i++){
+        bytes[i] = parseInt(hex.substr(i*2, 2), 16);
+    }
+    return bytes;
 }
 
 </script>

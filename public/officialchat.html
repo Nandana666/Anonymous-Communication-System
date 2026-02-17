@@ -1,49 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Citizen → Official Chat</title>
+    <title>Citizen → Official Chat (E2EE)</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <h2>Citizen → Official Chat</h2>
+<h2>Citizen → Official Chat (E2EE)</h2>
 
-    <!-- Anonymous ID -->
-    <p id="anonID" style="font-weight:bold; color:red;"></p>
+<p id="anonID" style="font-weight:bold; color:red;"></p>
 
-    <!-- Department selection -->
-    <label for="department">Select Department:</label>
-    <select id="department">
-        <option value="Police">Police</option>
-        <option value="Cyber">Cyber</option>
-        <option value="Fire">Fire</option>
-        <option value="Health">Health</option>
-    </select>
+<label for="department">Select Department:</label>
+<select id="department">
+    <option value="Police">Police</option>
+    <option value="Cyber">Cyber</option>
+    <option value="Fire">Fire</option>
+    <option value="Health">Health</option>
+</select>
 
-    <!-- Reply Token -->
-    <p>Reply Token: <span id="replyToken" style="font-weight:bold;"></span> 
-    <button onclick="copyReplyToken()">Copy</button></p>
-        <hr>
+<p>
+Reply Token:
+<span id="replyToken" style="font-weight:bold;"></span>
+<button onclick="copyReplyToken()">Copy</button>
+</p>
+
+<hr>
 
 <h3>Check Previous Messages</h3>
 
-<input type="text" id="checkTokenInput" 
+<input type="text" id="checkTokenInput"
        placeholder="Enter your Reply Token"
        style="width:300px; padding:5px;">
 
 <button onclick="checkMessages()">Check Messages</button>
 
 <br><br>
-    <!-- Chatbox -->
-    <div id="chatBox" class="chat-box"></div>
 
-    <!-- Input -->
-    <input type="text" id="messageInput" placeholder="Message the department...">
-    <button id="sendBtn" onclick="sendC2OMessage()" disabled>
+<div id="chatBox" class="chat-box"></div>
+
+<input type="text" id="messageInput"
+       placeholder="Message the department...">
+
+<button id="sendBtn"
+        onclick="sendC2OMessage()"
+        disabled>
     Connecting...
-    </button>
+</button>
 
-    <script src="js/crypto-js.js"></script>
-    <script src="officialchat.js" defer></script>
+<!-- 🚨 NO CryptoJS -->
+<script src="officialchat.js" defer></script>
+
 </body>
 </html>

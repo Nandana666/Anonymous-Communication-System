@@ -1,307 +1,293 @@
 let socket = null;
 let isConnecting = false;
 
-document.addEventListener("DOMContentLoaded", () => {
-    sessionStorage.removeItem("replyToken");
-sessionStorage.removeItem("replyDept");
+let departmentPublicKey = null;
+let citizenKeyPair = null;
+let replyToken = null;
 
-    // ==============================
-    // Strong Random Generator (Tor Safe)
-    // ==============================
+document.addEventListener("DOMContentLoaded", () => {
+
+    sessionStorage.removeItem("replyToken");
+    sessionStorage.removeItem("replyDept");
+
     function strongRandom(len = 8){
         const arr = new Uint8Array(len);
         crypto.getRandomValues(arr);
-
         return Array.from(arr)
             .map(b => b.toString(16).padStart(2,'0'))
             .join('')
             .substring(0,len);
     }
 
-    // ==============================
-    // Rotating Anonymous ID (DISPLAY ONLY)
-    // ==============================
-    let anonymousId = strongRandom(8);
+    const anonymousId = strongRandom(8);
+    document.getElementById("anonID").textContent = anonymousId;
 
-    const idEl = document.getElementById("anonID");
+    replyToken = sessionStorage.getItem("replyToken");
 
-    function rotateAnon(){
-        anonymousId = strongRandom(8);
-        if(idEl) idEl.textContent = anonymousId;
-    }
+    connectSocket();
 
-    rotateAnon();
-    setInterval(rotateAnon, 10000);
+});
 
-    // ==============================
-    // Stable Reply Token (REAL Identity)
-    // ==============================
-    let replyToken = sessionStorage.getItem("replyToken");
+// ================= CONNECT SOCKET =================
+function connectSocket(){
 
-const replyEl = document.getElementById("replyToken");
+    if(isConnecting) return;
+    isConnecting = true;
 
-// Only show token if it exists
-if(replyEl){
-    replyEl.textContent = replyToken ? replyToken : "";
-}
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    socket = new WebSocket(`${protocol}//${location.host}/citizen`);
 
+    socket.onopen = async () => {
 
-    // ==============================
-    // Clipboard
-    // ==============================
-    window.copyReplyToken = function(){
-        const temp = document.createElement("input");
-        temp.value = replyToken;
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand("copy");
-        document.body.removeChild(temp);
-        alert("Reply token copied!");
+        isConnecting = false;
+        document.getElementById("sendBtn").disabled = false;
+        document.getElementById("sendBtn").innerText = "Send";
+
+        await fetchDepartmentKey();
     };
 
-    // ==============================
-    // WebSocket
-    // ==============================
-    function connectSocket(){
+    socket.onmessage = async (event) => {
 
-        if(isConnecting) return;
+        let data;
+        try { data = JSON.parse(event.data); }
+        catch { return; }
 
-        if(socket &&
-            (socket.readyState === WebSocket.OPEN ||
-             socket.readyState === WebSocket.CONNECTING)){
+        // NEW TOKEN FROM SERVER
+        if(data.type === "newReplyToken"){
+
+            replyToken = data.replyToken;
+            sessionStorage.setItem("replyToken", replyToken);
+
+            await persistCitizenKeys(replyToken);
+
+            alert("Save this Reply Token:\n\n" + replyToken);
             return;
         }
 
-        isConnecting = true;
-        socket = new WebSocket(`ws://${location.host}/citizen`);
+        // HISTORY
+        if(data.chatType === "history"){
+            document.getElementById("chatBox").innerHTML = "";
 
-        socket.onopen = () => {
-
-            console.log("✅ Connected");
-            isConnecting = false;
-
-            const btn = document.getElementById("sendBtn");
-            if(btn){
-                btn.disabled = false;
-                btn.innerText = "Send";
+            for(const m of data.messages){
+                const text = await decryptMessage(m);
+                addMessage(
+                    m.from === "official" ? "Official" : "You",
+                    text,
+                    m.timestamp
+                );
             }
+            return;
+        }
 
-            // AUTO LOAD HISTORY
-            // if(replyToken){
+        // OFFICIAL REPLY
+        if(data.chatType === "otc" &&
+           replyToken &&
+           data.replyToken === replyToken){
 
-            //     const savedDept = sessionStorage.getItem("replyDept");
-
-            //     if(savedDept){
-
-            //         document.getElementById("department").value = savedDept;
-
-            //         socket.send(JSON.stringify({
-            //             chatType: "loadHistory",
-            //             department: savedDept,
-            //             replyToken: replyToken
-            //         }));
-            //     }
-            // }
-        };
-
-        socket.onerror = () => {
-            socket.close();
-        };
-
-        socket.onclose = () => {
-
-            console.log("⚠️ Reconnecting...");
-            isConnecting = false;
-
-            const btn = document.getElementById("sendBtn");
-            if(btn){
-                btn.disabled = true;
-                btn.innerText = "Reconnecting...";
-            }
-
-            setTimeout(connectSocket, 5000);
-        };
-
-        socket.onmessage = (event) => {
-
-            let data;
-            try{
-                data = JSON.parse(event.data);
-            }catch{
-                return;
-            }
-
-            const chatBox = document.getElementById("chatBox");
-            if(!chatBox) return;
-
-            // ================= HISTORY =================
-            if(data.chatType === "history"){
-
-                chatBox.innerHTML = "";
-
-                data.messages.forEach(m => {
-
-                    let text = m.message;
-
-                    try{
-                        const bytes = CryptoJS.AES.decrypt(text, "my_secret_key_123");
-                        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-                        if(decrypted) text = decrypted;
-                    }catch{}
-
-                    const div = document.createElement("div");
-
-                    const unread =
-                        (m.from === "official" && !m.readByCitizen) ? " 🔴" : "";
-
-                    div.innerHTML = `
-                        <b>${m.from === "official" ? "Official" : "You"}</b>: 
-                        ${text}${unread}
-                        <span style="color:gray;font-size:0.8em;">
-                        (${new Date(m.timestamp).toLocaleTimeString()})
-                        </span>
-                    `;
-
-                    chatBox.appendChild(div);
-                });
-
-                chatBox.scrollTop = chatBox.scrollHeight;
-                return;
-            }
-
-            // ================= NEW TOKEN =================
-            if(data.type === "newReplyToken"){
-
-                if(!sessionStorage.getItem("replyToken")){
-
-                    alert("⚠️ Save this Reply Token:\n\n" + data.replyToken);
-
-                    sessionStorage.setItem("replyToken", data.replyToken);
-
-                    const dept =
-                        document.getElementById("department").value;
-
-                    sessionStorage.setItem("replyDept", dept);
-
-                    replyToken = data.replyToken;
-
-                    if(replyEl) replyEl.textContent = replyToken;
-                }
-
-                return;
-            }
-
-            // ================= LIVE OFFICIAL MESSAGE =================
-            if(data.chatType === "otc" &&
-               replyToken &&
-               data.replyToken === replyToken){
-
-                let text = data.message;
-
-                try{
-                    const bytes = CryptoJS.AES.decrypt(text, "my_secret_key_123");
-                    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-                    if(decrypted) text = decrypted;
-                }catch{}
-
-                const div = document.createElement("div");
-
-                div.innerHTML = `
-                    <b>Official [${data.department}]</b>: 
-                    ${text}
-                    <span style="color:gray;font-size:0.8em;">
-                    (${new Date(data.timestamp).toLocaleTimeString()})
-                    </span>
-                `;
-
-                chatBox.appendChild(div);
-                chatBox.scrollTop = chatBox.scrollHeight;
-
-                // Mark as read
-                const savedDept = sessionStorage.getItem("replyDept");
-                if(savedDept){
-                    socket.send(JSON.stringify({
-                        chatType: "loadHistory",
-                        department: savedDept,
-                        replyToken: replyToken
-                    }));
-                }
-            }
-        };
-    }
-
-    // CONNECT
-    connectSocket();
-
-    // ==============================
-    // Send Citizen → Official
-    // ==============================
-    window.sendC2OMessage = function(){
-
-        const input = document.getElementById("messageInput");
-        const dept = document.getElementById("department").value;
-
-        if(!input || !input.value.trim())
-            return alert("Enter a message!");
-
-        if(!socket || socket.readyState !== WebSocket.OPEN)
-            return alert("Secure connection not ready yet...");
-
-        const message = input.value.trim();
-        const timestamp = Date.now();
-
-        socket.send(JSON.stringify({
-            chatType: "cto",
-            sender: anonymousId,
-            replyToken: replyToken || null,
-            department: dept,
-            message,
-            timestamp
-        }));
-
-        const chatBox = document.getElementById("chatBox");
-
-        const div = document.createElement("div");
-
-        div.innerHTML = `
-            <b>You [${dept}]</b>: ${message}
-            <span style="color:gray;font-size:0.8em;">
-            (${new Date(timestamp).toLocaleTimeString()})
-            </span>
-        `;
-
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        input.value="";
+            const text = await decryptMessage(data);
+            addMessage("Official", text, data.timestamp);
+        }
     };
-// ==============================
-// 🔵 Manual Check Using Reply Token
-// ==============================
+}
 
-window.checkMessages = function(){
+// ================= SEND MESSAGE =================
+window.sendC2OMessage = async function(){
 
-    const tokenInput = document.getElementById("checkTokenInput");
+    const input = document.getElementById("messageInput");
     const dept = document.getElementById("department").value;
 
-    if(!tokenInput.value.trim())
-        return alert("Enter your Reply Token!");
+    if(!input.value.trim())
+        return alert("Enter a message!");
 
-    if(!socket || socket.readyState !== WebSocket.OPEN)
-        return alert("Not connected yet...");
+    if(!departmentPublicKey)
+        return alert("Department key not ready yet.");
 
-    const enteredToken = tokenInput.value.trim();
+    if(!citizenKeyPair){
+        await loadOrCreateCitizenKeys();
+    }
 
-    sessionStorage.setItem("replyToken", enteredToken);
-    sessionStorage.setItem("replyDept", dept);
+    const publicKeyRaw = await crypto.subtle.exportKey(
+        "raw",
+        citizenKeyPair.publicKey
+    );
 
-    replyToken = enteredToken;
+    const sharedSecret = await crypto.subtle.deriveBits(
+        { name: "ECDH", public: departmentPublicKey },
+        citizenKeyPair.privateKey,
+        256
+    );
+
+    const aesKey = await crypto.subtle.importKey(
+        "raw",
+        await crypto.subtle.digest("SHA-256", sharedSecret),
+        { name: "AES-GCM" },
+        false,
+        ["encrypt"]
+    );
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        aesKey,
+        new TextEncoder().encode(input.value)
+    );
 
     socket.send(JSON.stringify({
-        chatType: "loadHistory",
+        chatType: "cto",
+        replyToken: replyToken || null,
         department: dept,
-        replyToken: enteredToken
+        ciphertext: bufferToHex(encrypted),
+        iv: bufferToHex(iv),
+        citizenPublicKey: bufferToHex(publicKeyRaw),
+        timestamp: Date.now()
     }));
+
+    addMessage("You", input.value, Date.now());
+    input.value = "";
 };
 
-});
+// ================= LOAD OR CREATE KEYPAIR =================
+async function loadOrCreateCitizenKeys(){
+
+    if(replyToken){
+
+        const storedPrivate = localStorage.getItem("citizenPrivate_" + replyToken);
+        const storedPublic  = localStorage.getItem("citizenPublic_" + replyToken);
+
+        if(storedPrivate && storedPublic){
+
+            const privateKey = await crypto.subtle.importKey(
+                "pkcs8",
+                hexToBuffer(storedPrivate),
+                { name: "ECDH", namedCurve: "P-256" },
+                false,
+                ["deriveBits"]
+            );
+
+            const publicKey = await crypto.subtle.importKey(
+                "raw",
+                hexToBuffer(storedPublic),
+                { name: "ECDH", namedCurve: "P-256" },
+                true,
+                []
+            );
+
+            citizenKeyPair = { privateKey, publicKey };
+            return;
+        }
+    }
+
+    citizenKeyPair = await crypto.subtle.generateKey(
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        ["deriveBits"]
+    );
+}
+
+// ================= PERSIST KEYS =================
+async function persistCitizenKeys(token){
+
+    const privateRaw = await crypto.subtle.exportKey(
+        "pkcs8",
+        citizenKeyPair.privateKey
+    );
+
+    const publicRaw = await crypto.subtle.exportKey(
+        "raw",
+        citizenKeyPair.publicKey
+    );
+
+    localStorage.setItem(
+        "citizenPrivate_" + token,
+        bufferToHex(privateRaw)
+    );
+
+    localStorage.setItem(
+        "citizenPublic_" + token,
+        bufferToHex(publicRaw)
+    );
+}
+
+// ================= FETCH DEPARTMENT KEY =================
+async function fetchDepartmentKey(){
+
+    const dept = document.getElementById("department").value;
+
+    const response = await fetch(`/api/department-key?department=${dept}`);
+    const data = await response.json();
+
+    if(!data.publicKey){
+        alert("Department not online yet.");
+        return;
+    }
+
+    departmentPublicKey = await crypto.subtle.importKey(
+        "raw",
+        hexToBuffer(data.publicKey),
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        []
+    );
+}
+
+// ================= DECRYPT =================
+async function decryptMessage(data){
+
+    if(!citizenKeyPair){
+        await loadOrCreateCitizenKeys();
+    }
+
+    const sharedSecret = await crypto.subtle.deriveBits(
+        { name: "ECDH", public: departmentPublicKey },
+        citizenKeyPair.privateKey,
+        256
+    );
+
+    const aesKey = await crypto.subtle.importKey(
+        "raw",
+        await crypto.subtle.digest("SHA-256", sharedSecret),
+        { name: "AES-GCM" },
+        false,
+        ["decrypt"]
+    );
+
+    const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: hexToBuffer(data.iv) },
+        aesKey,
+        hexToBuffer(data.ciphertext)
+    );
+
+    return new TextDecoder().decode(decrypted);
+}
+
+// ================= UI =================
+function addMessage(sender, text, timestamp){
+
+    const chatBox = document.getElementById("chatBox");
+
+    const div = document.createElement("div");
+    div.innerHTML = `
+        <b>${sender}</b>: ${text}
+        <span style="color:gray;font-size:0.8em;">
+        (${new Date(timestamp).toLocaleTimeString()})
+        </span>
+    `;
+
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ================= HELPERS =================
+function bufferToHex(buffer){
+    return [...new Uint8Array(buffer)]
+        .map(b => b.toString(16).padStart(2,"0"))
+        .join("");
+}
+
+function hexToBuffer(hex){
+    const bytes = new Uint8Array(hex.length/2);
+    for(let i=0;i<bytes.length;i++)
+        bytes[i] = parseInt(hex.substr(i*2,2),16);
+    return bytes;
+}

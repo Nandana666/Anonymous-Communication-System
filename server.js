@@ -318,38 +318,6 @@ ws.send(JSON.stringify({
 
 
 
-
-//     const expiry = officialTokens.get(token);
-
-//     // ✅ Only validate if token exists (official/admin)
-// // Citizens are allowed without token
-// if(token){
-
-//     if(
-//         !adminTokens.has(token) &&
-//         (!expiry || expiry < Date.now())
-//     ){
-//         ws.close();
-//         return;
-//     }
-
-// }
-
-
-// // ✅ AFTER validation → join department
-// if(dept && departments[dept]){
-
-//     // Mark this socket as official
-//     ws.isOfficial = !!token;
-//     ws.department = dept;
-
-//     departments[dept].add(ws);
-
-//     console.log("✅ Joined department:", dept);
-// }
-
-
-
     // ================= ADMIN =================
     if (url.pathname === "/admin") {
 

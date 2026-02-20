@@ -2,7 +2,6 @@ const express = require("express");
 const http = require("http");
 const path = require("path");
 const WebSocket = require("ws");
-//const bodyParser = require("body-parser");
 const crypto = require("crypto");
 const cors = require("cors");
 const fs = require("fs");
@@ -120,7 +119,7 @@ app.post("/api/admin/approve", (req, res) => {
     };
 
     delete data.pendingOfficials[email];
-    saveData(data);   // ⭐ VERY IMPORTANT
+    saveData(data);   
     res.json({ accessKey });
 });
 
@@ -178,7 +177,7 @@ app.post("/api/official/request", (req, res) => {
         return res.status(400).json({ error: "Already requested" });
 
     data.pendingOfficials[email] = { email, department };
-    saveData(data);   // ⭐ VERY IMPORTANT
+    saveData(data);   
     res.json({ message: "Signup request submitted!" });
 });
 
@@ -223,7 +222,7 @@ app.post("/api/official/login", (req, res) => {
     res.json({
         success: true,
         token,
-        department: official.department   // ⭐ ADD THIS LINE
+        department: official.department   
 
     });
 });
@@ -321,8 +320,6 @@ ws.send(JSON.stringify({
     // ================= ADMIN =================
     if (url.pathname === "/admin") {
 
-        //const token = url.searchParams.get("token");
-
         if (!token || !adminTokens.has(token)) {
             ws.close();
             return;
@@ -368,7 +365,7 @@ ws.send(JSON.stringify({
             } catch {}
         });
 
-        return; // ⭐ prevents admin socket from entering citizen logic
+        return; 
     }
 
     // ================= CITIZEN / OFFICIAL =================
@@ -405,7 +402,6 @@ if (message.chatType === "loadHistory") {
 
     const dept = message.department?.trim();
     const replyToken = message.replyToken;
-    // Store replyToken on citizen socket
 // Store replyToken for BOTH citizen and official
 ws.replyToken = replyToken;
 
@@ -447,8 +443,6 @@ ws.send(JSON.stringify({
 
     return;
 }
-
-
         // Citizen-to-official
         if (message.chatType === "cto") {
 
@@ -478,8 +472,6 @@ let replyData = JSON.parse(fs.readFileSync(replyFile));
 let chain = JSON.parse(fs.readFileSync(blockchainFile));
 
 let replyToken = message.replyToken;
-
-// ---------- Generate Reply Token ----------
 // ---------- Generate Reply Token ONLY if not provided ----------
 if(!replyToken){
 
@@ -554,7 +546,7 @@ chain.push(block);
 
 fs.writeFileSync(blockchainFile, JSON.stringify(chain, null, 2));
 
-// ---------- Send To Officials ----------
+
 // ---------- Send To Officials ----------
 departments[dept].forEach(client => {
     if(

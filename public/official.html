@@ -116,8 +116,6 @@ ws.onmessage = async (e) => {
 if(msg.citizenPublicKey){
     conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
 }
-
-    // 🔥 SECOND PASS — decrypt safely
     // 🔥 SECOND PASS — decrypt safely
 for(const m of msg.messages){
 

@@ -145,23 +145,29 @@ for(const m of msg.messages){
     // Live message
     if(msg.chatType === "cto"){
 
-        if(msg.citizenPublicKey){
-            conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
-        }
-
-        const text = await decryptMessage(msg);
-
-        messagesEl.innerHTML += `
-            <b>${msg.chatType === "cto" ? "Citizen" : "You"}:</b>
-            ${text}
-            <br><small>${new Date(msg.timestamp).toLocaleTimeString()}</small><br><br>
-        `;
-
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-
-        currentReplyToken = msg.replyToken;
-        document.getElementById("replyTokenInput").value = msg.replyToken;
+    // Store citizen key
+    if(msg.citizenPublicKey){
+        conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
     }
+
+    // ❗ DO NOT display if this conversation is not open
+    if(msg.replyToken !== currentReplyToken){
+        console.log("Message belongs to another conversation");
+        return;
+    }
+
+    const text = await decryptMessage(msg);
+
+    messagesEl.innerHTML += `
+        <b>Citizen:</b>
+        ${text}
+        <br><small>${new Date(msg.timestamp).toLocaleTimeString()}</small><br><br>
+    `;
+
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+        
 };
 
 // --------------------
@@ -345,6 +351,8 @@ function renderConversationList(conversations){
 // LOAD HISTORY
 // --------------------
 function loadConversation(replyToken){
+
+    currentReplyToken = replyToken;   // 🔥 ADD THIS LINE
 
     document.getElementById("replyTokenInput").value = replyToken;
 

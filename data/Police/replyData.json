@@ -284,5 +284,44 @@
     ],
     "citizenPublicKey": "04f36a79a07cbcdaae779650468d89b6fa3a61cc755b223cf7c18dd210e2ba9e7c369f61e6ca7939d0ad56a3e56945a43bd2ed2f449c1c51839c546db2a9470788",
     "officialPublicKey": "04056ded1465f04099e885b22463271d10936c7e86874d3582230d605ec562453403dcee76cdf3a3eb532dbc4522282620609ef669b69c9917d6c9010ba6c30ac5"
+  },
+  "0d2a894e9935489ce69b598ab4583b446b0f06ad0dccc1968a3a40aee9a0adde": {
+    "department": "Police",
+    "createdAt": 1771823263660,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "1eb9d97e583ad39741238a0d631c03f5db5f8b",
+        "iv": "a3107ad2cc0b7604f5bdbc45",
+        "citizenPublicKey": "04071b47bfdd22b3a343dcaaf65fabed874a40500737c5d0d3ef6ec0d1f129379ab23d96298dec1536fe28e13b3a5b8c8f44944b0ef08cd3d077c4dc3b3a6c1dc2",
+        "timestamp": 1771823263273,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "c70498c53619c16a13baf7529621b214231ea3",
+        "iv": "22ccb9d8f2b8da5752e09a94",
+        "officialPublicKey": "044340eb7a29f79aec753b1563b10ac7f684424a0c141288d642642bd3bd813a2a2675d5fc8802d669d83f093047705ef8aa28b02def6f945281c6b7f16ed6073a",
+        "timestamp": 1771823311124,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "04071b47bfdd22b3a343dcaaf65fabed874a40500737c5d0d3ef6ec0d1f129379ab23d96298dec1536fe28e13b3a5b8c8f44944b0ef08cd3d077c4dc3b3a6c1dc2",
+    "officialPublicKey": "044340eb7a29f79aec753b1563b10ac7f684424a0c141288d642642bd3bd813a2a2675d5fc8802d669d83f093047705ef8aa28b02def6f945281c6b7f16ed6073a"
+  },
+  "9d0191648428b9614273f68e3eca75d8f3bdcdad8d7e49f41be1fa6d719a2ebe": {
+    "department": "Police",
+    "createdAt": 1771823330674,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "05441e20b0b986304195ed51f42d807d9c2862",
+        "iv": "10670b551d25cbb4ac65b235",
+        "citizenPublicKey": "047f2c10846115f767881f478ccfa1ec4f64afc03ab2e2a8c2f6c92a19b07a30c78a7ece420cd65777512c9788e1dbd635b91802833433a881e81b2b02e327870d",
+        "timestamp": 1771823330307,
+        "readByOfficial": true
+      }
+    ],
+    "citizenPublicKey": "047f2c10846115f767881f478ccfa1ec4f64afc03ab2e2a8c2f6c92a19b07a30c78a7ece420cd65777512c9788e1dbd635b91802833433a881e81b2b02e327870d"
   }
 }

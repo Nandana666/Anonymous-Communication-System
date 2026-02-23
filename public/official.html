@@ -152,9 +152,15 @@ for(const m of msg.messages){
 
     // ❗ DO NOT display if this conversation is not open
     if(msg.replyToken !== currentReplyToken){
-        console.log("Message belongs to another conversation");
-        return;
-    }
+    console.log("Message belongs to another conversation");
+
+    // 🔄 Request updated conversation list
+    ws.send(JSON.stringify({
+        type: "refreshConversations"
+    }));
+
+    return;
+}
 
     const text = await decryptMessage(msg);
 

@@ -374,6 +374,41 @@ ws.send(JSON.stringify({
         let message;
         try { message = JSON.parse(raw); }
         catch { return; }
+        // ================= REFRESH CONVERSATIONS =================
+if (message.type === "refreshConversations" && ws.isOfficial) {
+
+    const dept = ws.department;
+    const deptFolder = path.join(__dirname, "data", dept);
+    const replyFile = path.join(deptFolder, "replyData.json");
+
+    if (!fs.existsSync(replyFile)) return;
+
+    const replyData = JSON.parse(fs.readFileSync(replyFile));
+
+    const conversations = [];
+
+    Object.keys(replyData).forEach(replyToken => {
+
+        const convo = replyData[replyToken];
+
+        const unreadCount = convo.messages.filter(
+            m => m.from === "citizen" && m.readByOfficial === false
+        ).length;
+
+        conversations.push({
+            replyToken,
+            lastMessageTime: convo.messages[convo.messages.length - 1]?.timestamp,
+            unreadCount
+        });
+    });
+
+    ws.send(JSON.stringify({
+        type: "conversationList",
+        conversations
+    }));
+
+    return;
+}
 // ================= SAVE DEPARTMENT PUBLIC KEY =================
 if (message.type === "departmentPublicKey") {
 
@@ -431,7 +466,29 @@ ws.replyToken = replyToken;
 
     // Save updated read flags
     fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
+    // 🔄 Recalculate conversations after marking as read
+const conversations = [];
 
+Object.keys(replyData).forEach(tokenKey => {
+
+    const convo = replyData[tokenKey];
+
+    const unreadCount = convo.messages.filter(
+        m => m.from === "citizen" && m.readByOfficial === false
+    ).length;
+
+    conversations.push({
+        replyToken: tokenKey,
+        lastMessageTime: convo.messages[convo.messages.length - 1]?.timestamp,
+        unreadCount
+    });
+});
+
+// Send updated conversation list
+ws.send(JSON.stringify({
+    type: "conversationList",
+    conversations
+}));
    // ✅ THEN send updated history (INCLUDING citizen key)
 ws.send(JSON.stringify({
     chatType: "history",

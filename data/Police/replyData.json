@@ -414,7 +414,7 @@
         "iv": "439490e18ab2b8cf73a41f34",
         "officialPublicKey": "044340eb7a29f79aec753b1563b10ac7f684424a0c141288d642642bd3bd813a2a2675d5fc8802d669d83f093047705ef8aa28b02def6f945281c6b7f16ed6073a",
         "timestamp": 1771824351511,
-        "readByCitizen": false
+        "readByCitizen": true
       },
       {
         "from": "citizen",
@@ -422,6 +422,22 @@
         "iv": "d06f1150995f2c076f5d43a9",
         "citizenPublicKey": "04a4723882cd111e8583154f062a046432c7c84b09f9fd4fe20e6b33fb40526452b7ed6f2a8d0544b18255d64a642b55edd670c380e51f4b1e790c2971dcd07ebe",
         "timestamp": 1771824400045,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "74e1486cbd9f977aebce6dc4f94f15b659f0",
+        "iv": "116abe1b4f4b9e2ce9acf44c",
+        "officialPublicKey": "044340eb7a29f79aec753b1563b10ac7f684424a0c141288d642642bd3bd813a2a2675d5fc8802d669d83f093047705ef8aa28b02def6f945281c6b7f16ed6073a",
+        "timestamp": 1771824631117,
+        "readByCitizen": true
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "8aeec689fa01ea7ac25538403c3f8645a04074",
+        "iv": "a8d204b519271b2d9f987c19",
+        "citizenPublicKey": "04a4723882cd111e8583154f062a046432c7c84b09f9fd4fe20e6b33fb40526452b7ed6f2a8d0544b18255d64a642b55edd670c380e51f4b1e790c2971dcd07ebe",
+        "timestamp": 1771825720389,
         "readByOfficial": true
       }
     ],

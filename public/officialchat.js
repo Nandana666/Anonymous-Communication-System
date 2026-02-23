@@ -7,8 +7,8 @@ let replyToken = null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    sessionStorage.removeItem("replyToken");
-    sessionStorage.removeItem("replyDept");
+    // sessionStorage.removeItem("replyToken");
+    // sessionStorage.removeItem("replyDept");
 
     function strongRandom(len = 8){
         const arr = new Uint8Array(len);
@@ -55,14 +55,17 @@ function connectSocket(){
         // NEW TOKEN FROM SERVER
         if(data.type === "newReplyToken"){
 
-            replyToken = data.replyToken;
-            sessionStorage.setItem("replyToken", replyToken);
+    replyToken = data.replyToken;
+    sessionStorage.setItem("replyToken", replyToken);
 
-            await persistCitizenKeys(replyToken);
+    document.getElementById("replyToken").textContent = replyToken;
 
-            alert("Save this Reply Token:\n\n" + replyToken);
-            return;
-        }
+    await loadOrCreateCitizenKeys();
+    await persistCitizenKeys(replyToken);
+
+    alert("Save this Reply Token:\n\n" + replyToken);
+    return;
+}
 
         // HISTORY
         if(data.chatType === "history"){
@@ -290,4 +293,25 @@ function hexToBuffer(hex){
     for(let i=0;i<bytes.length;i++)
         bytes[i] = parseInt(hex.substr(i*2,2),16);
     return bytes;
+}
+// ================= CHECK EXISTING TOKEN =================
+async function checkMessages(){
+
+    const token = document.getElementById("checkTokenInput").value.trim();
+    const dept  = document.getElementById("department").value;
+
+    if(!token) return alert("Enter your Reply Token");
+
+    replyToken = token;
+    sessionStorage.setItem("replyToken", token);
+
+    // Load stored private key
+    await loadOrCreateCitizenKeys();
+
+    // Ask server for history
+    socket.send(JSON.stringify({
+        chatType: "loadHistory",
+        department: dept,
+        replyToken: token
+    }));
 }

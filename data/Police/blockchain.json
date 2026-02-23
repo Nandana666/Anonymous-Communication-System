@@ -292,5 +292,19 @@
     "dataHash": "6e0145e422950040a962cac28fe0312412920f6cb5f96d7db5b770d6d28704a3",
     "previousHash": "9fed852456308054ed059b71a9a08ebcc984bd500febb3694c2dcd520e3445e9",
     "hash": "3924e4f535df3edf686ce27ec108071e64b64e60e5e47880fb53f4726b3b60fb"
+  },
+  {
+    "index": 42,
+    "timestamp": 1771824631513,
+    "dataHash": "8ae3f822975f91d57fef6eb2d5afbc174584040e162321d62eba59b13e142e73",
+    "previousHash": "3924e4f535df3edf686ce27ec108071e64b64e60e5e47880fb53f4726b3b60fb",
+    "hash": "4db41678c6ff2abab06968e90ca953c9e295b0fbf0379e08d7ed96502d965a43"
+  },
+  {
+    "index": 43,
+    "timestamp": 1771825720841,
+    "dataHash": "30f97c5cc93b68ac458b18d7735ddbdd7a62f3d4e2f46f0655dd07114253626d",
+    "previousHash": "4db41678c6ff2abab06968e90ca953c9e295b0fbf0379e08d7ed96502d965a43",
+    "hash": "cc252da6de8fb2c33f043ef001c19ffd2e2528e114d6348f20772157c42a257f"
   }
 ]

@@ -1,26 +1,126 @@
+/* General */
 body {
-    font-family: Arial;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+/* Hero Section */
+.hero {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     text-align: center;
-    background: #f4f4f4;
+    background: linear-gradient(135deg,#1e293b,#020617);
 }
 
-.chat-box {
-    width: 60%;
-    height: 300px;
-    margin: 20px auto;
-    background: white;
-    border: 1px solid #ccc;
-    overflow-y: scroll;
-    padding: 10px;
-    text-align: left;
+.hero-content h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
 }
 
-input {
-    padding: 8px;
-    width: 300px;
+.subtitle {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    color: #94a3b8;
 }
 
-button {
-    padding: 8px 15px;
-    cursor: pointer;
+/* Hero Buttons */
+.hero-buttons a {
+    display: inline-block;
+    margin: 10px;
+    padding: 12px 22px;
+    text-decoration: none;
+    background: #2563eb;
+    color: white;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.hero-buttons a:hover {
+    background: #3b82f6;
+    transform: translateY(-2px);
+}
+
+/* Features Section */
+.features {
+    padding: 70px 20px;
+    text-align: center;
+    background: #020617;
+}
+
+.features h2 {
+    margin-bottom: 40px;
+}
+
+.feature-cards {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+/* Feature Cards */
+.card {
+    background: #1e293b;
+    padding: 30px;
+    border-radius: 10px;
+    width: 250px;
+    transition: all 0.3s ease;
+}
+
+.card i {
+    font-size: 35px;
+    margin-bottom: 15px;
+    color: #3b82f6;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    background: #334155;
+}
+
+/* Login Section */
+.login-section {
+    text-align: center;
+    padding: 60px 20px;
+    background: #020617;
+}
+
+.login-btn {
+    display: inline-block;
+    margin: 10px;
+    padding: 12px 25px;
+    text-decoration: none;
+    background: #16a34a;
+    color: white;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.login-btn:hover {
+    background: #22c55e;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 15px;
+    background: #020617;
+    color: #94a3b8;
+}
+
+/* Scroll Animation */
+.animate {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.7s ease;
+}
+
+.animate.active {
+    opacity: 1;
+    transform: translateY(0);
 }

@@ -199,7 +199,7 @@ app.get("/api/official/status", (req, res) => {
     });
 });
 
-// ✅ PASTE THE LOGIN ROUTE RIGHT HERE
+// LOGIN ROUTE
 app.post("/api/official/login", (req, res) => {
 
     const { email, accessKey } = req.body;
@@ -242,7 +242,7 @@ app.get("/api/department-key", (req, res) => {
     return res.json({ publicKey: null });
 });
 // --------------------
-// ✅ Unified WebSocket (FIXES MAJOR BUG)
+// ✅ Unified WebSocket
 // --------------------
 wss.on("connection", (ws, req) => {
 
@@ -742,7 +742,7 @@ if (message.type === "join-private") {
         count: roomSet.size
     }));
 
-    // 🔥 IMPORTANT FIX
+    
     // If now 2 users, trigger handshake start
     if (roomSet.size === 2) {
         roomSet.forEach(client => {
@@ -791,9 +791,7 @@ if (message.chatType === "private") {
 
     return;
 }
-        // 🔵 NOTE:
-        // Your public/private chat is handled inside chat.js
-        // No change required here.
+        
     });
 
     ws.on("close", () => {

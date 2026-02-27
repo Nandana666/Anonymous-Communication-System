@@ -162,7 +162,7 @@ if (data.type === "peer-disconnected") {
     sharedKey = null;
     sessionKeyPair = null;
 
-    socket.close(); // optional but clean
+    socket.close(); 
     window.location.href = "index.html";
     return;
 }

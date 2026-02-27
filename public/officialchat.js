@@ -7,8 +7,6 @@ let replyToken = null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
-    // sessionStorage.removeItem("replyToken");
-    // sessionStorage.removeItem("replyDept");
 
     function strongRandom(len = 8){
         const arr = new Uint8Array(len);

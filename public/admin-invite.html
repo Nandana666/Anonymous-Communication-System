@@ -3,10 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <title>Admin Panel</title>
+<style>
+
+/* Page */
+body{
+    margin:0;
+    font-family:'Segoe UI',sans-serif;
+    background:linear-gradient(135deg,#0f172a,#1e293b,#020617);
+    color:#e2e8f0;
+    padding:40px;
+}
+
+/* Titles */
+h2{
+    margin-bottom:10px;
+}
+
+h3{
+    margin-top:40px;
+}
+
+/* Logout button */
+button{
+    padding:8px 14px;
+    border:none;
+    border-radius:6px;
+    background:linear-gradient(135deg,#2563eb,#3b82f6);
+    color:white;
+    cursor:pointer;
+    font-weight:500;
+    transition:0.2s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 4px 12px rgba(59,130,246,0.5);
+}
+
+/* Tables */
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+    background:#1e293b;
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+/* Header */
+thead{
+    background:#2563eb;
+    color:white;
+}
+
+thead th{
+    padding:12px;
+    text-align:left;
+}
+
+/* Rows */
+tbody td{
+    padding:12px;
+    border-bottom:1px solid #334155;
+}
+
+tbody tr:hover{
+    background:#334155;
+}
+
+/* Approve button inside table */
+tbody button{
+    background:#16a34a;
+}
+
+tbody button:hover{
+    background:#22c55e;
+}
+/* Admin header layout */
+.admin-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:30px;
+}
+
+/* Logout button styling */
+.logout-btn{
+    padding:8px 16px;
+    border:none;
+    border-radius:6px;
+    background:#ef4444;
+    color:white;
+    font-weight:500;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+/* Hover */
+.logout-btn:hover{
+    background:#dc2626;
+    transform:translateY(-2px);
+    box-shadow:0 4px 10px rgba(239,68,68,0.4);
+}
+</style>
 </head>
 <body>
-<h2>Admin Panel</h2>
-<button onclick="logout()">Logout</button>
+<div class="admin-header">
+  <h2>Admin Panel</h2>
+  <button class="logout-btn" onclick="logout()">Logout</button>
+</div>
 
 <h3>Pending Requests</h3>
 <table border="1">

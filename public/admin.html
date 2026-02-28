@@ -3,14 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <title>Admin Login</title>
+<style>
+
+/* Page background */
+body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-family:'Segoe UI',sans-serif;
+    background:linear-gradient(135deg,#0f172a,#1e293b,#020617);
+    color:white;
+}
+
+/* Login container */
+.login-container{
+    background:rgba(20,30,48,0.85);
+    padding:40px;
+    border-radius:16px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.5);
+    text-align:center;
+    width:380px;
+}
+
+/* Title */
+.login-container h2{
+    margin-bottom:25px;
+    font-weight:600;
+}
+
+/* Inputs */
+.login-container input{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border-radius:8px;
+    border:1px solid #334155;
+    background:#020617;
+    color:white;
+    font-size:14px;
+    outline:none;
+    transition:0.2s;
+}
+
+.login-container input:focus{
+    border-color:#3b82f6;
+    box-shadow:0 0 8px rgba(59,130,246,0.7);
+}
+
+/* Button */
+.login-container button{
+    width:100%;
+    padding:12px;
+    margin-top:12px;
+    border:none;
+    border-radius:8px;
+    background:linear-gradient(135deg,#2563eb,#3b82f6);
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.login-container button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 18px rgba(59,130,246,0.5);
+}
+
+/* Error message */
+#msg{
+    margin-top:10px;
+    font-size:14px;
+    color:#f87171;
+}
+
+</style>
 </head>
 <body>
+<div class="login-container">
 <h2>Admin Login</h2>
+
 <input id="username" placeholder="Username"><br>
 <input id="password" type="password" placeholder="Password"><br>
 <button onclick="login()">Login</button>
-<div id="msg"></div>
 
+<div id="msg"></div>
+</div>
 <script>
 async function login(){
     const username = document.getElementById("username").value;

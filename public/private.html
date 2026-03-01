@@ -2,7 +2,109 @@
 <html>
 <head>
     <title>Secure Private Chat</title>
-    <link rel="stylesheet" href="styles.css">
+    <style>
+
+/* Page */
+body{
+    font-family:'Segoe UI',sans-serif;
+    margin:0;
+    padding:30px;
+    background:linear-gradient(135deg,#0f172a,#1e293b,#020617);
+    color:#e2e8f0;
+}
+
+/* Title */
+h2{
+    margin-bottom:15px;
+}
+
+/* Anonymous ID bar */
+#anonId{
+    color:#22c55e;
+    font-weight:bold;
+}
+
+/* Section divider */
+hr{
+    border:none;
+    border-top:1px solid #334155;
+    margin:20px 0;
+}
+
+/* Buttons */
+button{
+    padding:10px 16px;
+    margin:5px 5px 5px 0;
+    border:none;
+    border-radius:6px;
+    background:linear-gradient(135deg,#2563eb,#3b82f6);
+    color:white;
+    font-weight:500;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 4px 12px rgba(59,130,246,0.5);
+}
+
+/* Input fields */
+input{
+    padding:10px;
+    border-radius:6px;
+    border:1px solid #334155;
+    background:#020617;
+    color:white;
+    outline:none;
+}
+
+input:focus{
+    border-color:#3b82f6;
+}
+
+/* Invite link box */
+#inviteLink{
+    margin:10px 0;
+    word-break:break-all;
+    background:#1e293b !important;
+    padding:10px;
+    border-radius:6px;
+    font-size:12px;
+    border:1px solid #334155;
+}
+
+/* Chat box */
+.chat-box{
+    border:1px solid #334155 !important;
+    height:350px;
+    overflow-y:auto;
+    padding:10px;
+    margin-bottom:10px;
+    background:#1e293b !important;
+    border-radius:8px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* Messages */
+.chat-box div{
+    background:#334155;
+    padding:6px 8px;
+    margin-bottom:6px;
+    border-radius:6px;
+}
+
+/* Secure status */
+#secureStatus{
+    font-weight:bold;
+}
+
+/* Warning */
+#roomWarning{
+    color:#f87171;
+}
+
+</style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>

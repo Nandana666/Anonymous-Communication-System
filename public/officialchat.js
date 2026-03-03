@@ -19,7 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const anonymousId = strongRandom(8);
     document.getElementById("anonID").textContent = anonymousId;
-
+    document.getElementById("department").addEventListener("change", async () => {
+    await fetchDepartmentKey();
+});
     replyToken = sessionStorage.getItem("replyToken");
 
     connectSocket();
@@ -70,7 +72,15 @@ function connectSocket(){
             document.getElementById("chatBox").innerHTML = "";
 
             for(const m of data.messages){
-                const text = await decryptMessage(m);
+
+    let text;
+
+    try{
+        text = await decryptMessage(m);
+    }catch(err){
+        console.log("Decrypt failed:", err);
+        text = "[Decryption failed]";
+    }
                 addMessage(
                     m.from === "official" ? "Official" : "You",
                     text,
@@ -81,13 +91,30 @@ function connectSocket(){
         }
 
         // OFFICIAL REPLY
-        if(data.chatType === "otc" &&
-           replyToken &&
-           data.replyToken === replyToken){
+        // OFFICIAL REPLY
+if(data.chatType === "otc"){
 
-            const text = await decryptMessage(data);
-            addMessage("Official", text, data.timestamp);
+    // If replyToken not yet stored, store it
+    if(!replyToken){
+        replyToken = data.replyToken;
+        sessionStorage.setItem("replyToken", replyToken);
+        document.getElementById("replyToken").textContent = replyToken;
+    }
+
+    if(data.replyToken === replyToken){
+
+        let text;
+
+        try{
+            text = await decryptMessage(data);
+        }catch(err){
+            console.log("Decrypt failed:", err);
+            text = "[Decryption failed]";
         }
+
+        addMessage("Official", text, data.timestamp);
+    }
+}
     };
 }
 
@@ -239,8 +266,17 @@ async function decryptMessage(data){
         await loadOrCreateCitizenKeys();
     }
 
+    // Use official public key sent in reply
+    const officialPublicKey = await crypto.subtle.importKey(
+        "raw",
+        hexToBuffer(data.officialPublicKey),
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        []
+    );
+
     const sharedSecret = await crypto.subtle.deriveBits(
-        { name: "ECDH", public: departmentPublicKey },
+        { name: "ECDH", public: officialPublicKey },
         citizenKeyPair.privateKey,
         256
     );
@@ -261,7 +297,6 @@ async function decryptMessage(data){
 
     return new TextDecoder().decode(decrypted);
 }
-
 // ================= UI =================
 function addMessage(sender, text, timestamp){
 
@@ -300,13 +335,21 @@ async function checkMessages(){
 
     if(!token) return alert("Enter your Reply Token");
 
+    if(!socket || socket.readyState !== WebSocket.OPEN){
+        return alert("Connection not ready yet.");
+    }
+
     replyToken = token;
     sessionStorage.setItem("replyToken", token);
 
-    // Load stored private key
+    // 🔑 Ensure department key is loaded
+    if(!departmentPublicKey){
+        await fetchDepartmentKey();
+    }
+
+    // 🔑 Load citizen keys
     await loadOrCreateCitizenKeys();
 
-    // Ask server for history
     socket.send(JSON.stringify({
         chatType: "loadHistory",
         department: dept,

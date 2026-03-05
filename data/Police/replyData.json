@@ -861,7 +861,7 @@
         "iv": "6bb60651c5a1e98cdf49d3fa",
         "citizenPublicKey": "0457971878a2b74f9748c35fd528a8728e193a6a3e25cc145fa83eefb2218e67cf55195e0a023e87c7c099d724faecb3257d06153390c9777cc0e78f1c6a843e49",
         "timestamp": 1773570703021,
-        "readByOfficial": false
+        "readByOfficial": true
       }
     ],
     "citizenPublicKey": "0457971878a2b74f9748c35fd528a8728e193a6a3e25cc145fa83eefb2218e67cf55195e0a023e87c7c099d724faecb3257d06153390c9777cc0e78f1c6a843e49",

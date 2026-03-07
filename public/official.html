@@ -106,37 +106,41 @@ ws.onmessage = async (e) => {
     const messagesEl = document.getElementById("messages");
 
     // History load
-    if(msg.chatType === "history"){
+if(msg.chatType === "history"){
 
+    const messagesEl = document.getElementById("messages");
     messagesEl.innerHTML = "";
 
-    // 🔥 FIRST PASS — collect citizen public key
-    // 🔐 Get citizen key from conversation root
-// 🔐 Store citizen key sent from server
-if(msg.citizenPublicKey){
-    conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
-}
-    // 🔥 SECOND PASS — decrypt safely
-for(const m of msg.messages){
-
-    // 🔐 VERY IMPORTANT FIX
-    m.replyToken = msg.replyToken;
-
-    let text;
-
-    try {
-        text = await decryptMessage(m);
-    } catch(err) {
-        console.log("Decryption failed:", err);
-        text = "[Decryption Failed]";
+    // Store citizen key from conversation
+    if(msg.citizenPublicKey){
+        conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
     }
 
-    messagesEl.innerHTML += `
-        <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
-        ${text}
-        <br><small>${new Date(m.timestamp).toLocaleTimeString()}</small><br><br>
-    `;
-}
+    for(const m of msg.messages){
+
+        // Ensure replyToken is attached
+        m.replyToken = msg.replyToken;
+
+        // Use stored citizen key if message doesn't include it
+        if(!m.citizenPublicKey){
+            m.citizenPublicKey = conversationPublicKeys[msg.replyToken];
+        }
+
+        let text;
+
+        try{
+            text = await decryptMessage(m);
+        }catch(err){
+            console.log("Decrypt failed:", err);
+            text = "[Decryption Failed]";
+        }
+
+        messagesEl.innerHTML += `
+            <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
+            ${text}
+            <br><small>${new Date(m.timestamp).toLocaleTimeString()}</small><br><br>
+        `;
+    }
 
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return;

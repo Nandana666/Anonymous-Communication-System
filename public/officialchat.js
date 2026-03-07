@@ -60,7 +60,7 @@ function connectSocket(){
 
     document.getElementById("replyToken").textContent = replyToken;
 
-    await loadOrCreateCitizenKeys();
+    // Save the existing keypair for this conversation
     await persistCitizenKeys(replyToken);
 
     alert("Save this Reply Token:\n\n" + replyToken);
@@ -131,8 +131,14 @@ window.sendC2OMessage = async function(){
         return alert("Department key not ready yet.");
 
     if(!citizenKeyPair){
-        await loadOrCreateCitizenKeys();
-    }
+
+    // Create a temporary keypair first
+    citizenKeyPair = await crypto.subtle.generateKey(
+        { name:"ECDH", namedCurve:"P-256" },
+        true,
+        ["deriveBits"]
+    );
+}
 
     const publicKeyRaw = await crypto.subtle.exportKey(
         "raw",
@@ -265,31 +271,31 @@ async function decryptMessage(data){
     if(!citizenKeyPair){
         await loadOrCreateCitizenKeys();
     }
-
-    let officialPublicKey;
-
-    // If official public key exists in message
-    if(data.officialPublicKey){
-
-        officialPublicKey = await crypto.subtle.importKey(
-            "raw",
-            hexToBuffer(data.officialPublicKey),
-            { name: "ECDH", namedCurve: "P-256" },
-            false,
-            []
-        );
-
-    }else{
-
-        // fallback to department key
-        officialPublicKey = departmentPublicKey;
+    // Ensure department key is loaded
+    if(!departmentPublicKey){
+        await fetchDepartmentKey();
     }
 
-    const sharedSecret = await crypto.subtle.deriveBits(
-        { name: "ECDH", public: officialPublicKey },
-        citizenKeyPair.privateKey,
-        256
+    if(!data.ciphertext) return "[Invalid]";
+
+    // ALWAYS use department public key for shared secret
+    let officialKey = departmentPublicKey;
+
+if(data.officialPublicKey){
+    officialKey = await crypto.subtle.importKey(
+        "raw",
+        hexToBuffer(data.officialPublicKey),
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        []
     );
+}
+
+const sharedSecret = await crypto.subtle.deriveBits(
+    { name: "ECDH", public: officialKey },
+    citizenKeyPair.privateKey,
+    256
+);
 
     const aesKey = await crypto.subtle.importKey(
         "raw",

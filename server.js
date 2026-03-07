@@ -495,6 +495,7 @@ ws.send(JSON.stringify({
     department: dept,
     replyToken,
     citizenPublicKey: replyData[replyToken].citizenPublicKey,
+    officialPublicKey: replyData[replyToken].officialPublicKey,
     messages: replyData[replyToken].messages
 }));
 

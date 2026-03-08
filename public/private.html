@@ -120,19 +120,21 @@ input:focus{
     <!-- Create Room -->
     <button onclick="createRoom()">Create Secure Private Room</button>
 
-    <div id="generatedRoom" style="margin:10px 0; font-weight:bold;"></div>
+    <!-- <div id="generatedRoom" style="margin:10px 0; font-weight:bold;"></div> -->
 
     <!-- Share Invite -->
-    <button onclick="shareInvite()">🔗 Share Secure Invite</button>
+    <button id="shareBtn" onclick="shareInvite()" style="display:none;">
+Copy Secure Invite Link
+</button>
 
-    <div id="inviteLink" style="
+    <!-- <div id="inviteLink" style="
         margin:10px 0;
         word-break:break-all;
         background:#f4f4f4;
         padding:8px;
         border-radius:5px;
         font-size:12px;">
-    </div>
+    </div> -->
 
     <hr>
 
@@ -143,7 +145,7 @@ input:focus{
     <!-- Secure Status -->
     <div id="secureStatus"
          style="margin:15px 0; font-weight:bold; color:orange;">
-        🔒 Waiting for secure partner...
+        <!-- 🔒 Waiting for secure partner... -->
     </div>
 
     <!-- Room Full Warning -->

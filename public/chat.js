@@ -91,9 +91,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         privateRoomCode =
             Math.random().toString(36).substring(2,8).toUpperCase();
 
-        document.getElementById("generatedRoom").textContent =
-            `Room Code: ${privateRoomCode}`;
-
+        // SHOW SHARE BUTTON AFTER ROOM CREATION
+        document.getElementById("shareBtn").style.display = "inline-block";
         // 🔐 Always regenerate fresh key
         sessionKeyPair = await crypto.subtle.generateKey(
             { name: "ECDH", namedCurve: "P-256" },
@@ -395,28 +394,24 @@ if(inviteRoom){
     // --------------------
     window.shareInvite = async function() {
 
-        if(!privateRoomCode){
-            return alert("Create room first!");
-        }
+    if(!privateRoomCode){
+        return alert("Create room first!");
+    }
 
-        const inviteLink =
-            `${location.origin}${location.pathname}?room=${privateRoomCode}`;
+    const inviteLink =
+        `${location.origin}${location.pathname}?room=${privateRoomCode}`;
 
-        document.getElementById("inviteLink").textContent = inviteLink;
+    try {
 
-        if(navigator.share){
-            try{
-                await navigator.share({
-                    title: "Secure Private Chat",
-                    text: "Join my secure private chat:",
-                    url: inviteLink
-                });
-            } catch {}
-        }
-        else {
-            await navigator.clipboard.writeText(inviteLink);
-            alert("Invite link copied to clipboard!");
-        }
-    };
+        await navigator.clipboard.writeText(inviteLink);
+
+        alert("Secure invite link copied!");
+
+    } catch {
+
+        alert("Failed to copy invite link");
+
+    }
+};
 
 });

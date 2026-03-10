@@ -374,6 +374,25 @@ ws.send(JSON.stringify({
         let message;
         try { message = JSON.parse(raw); }
         catch { return; }
+        // ================= PUBLIC CHAT =================
+if (message.chatType === "public") {
+
+    wss.clients.forEach(client => {
+
+        if (client.readyState === WebSocket.OPEN) {
+
+            client.send(JSON.stringify({
+                chatType: "public",
+                sender: message.sender,
+                message: message.message
+            }));
+
+        }
+
+    });
+
+    return;
+}
         // ================= REFRESH CONVERSATIONS =================
 if (message.type === "refreshConversations" && ws.isOfficial) {
 

@@ -33,8 +33,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     verified = false;
     sharedKey = null;
 
-    document.getElementById("secureStatus").textContent =
-        "Connection lost. Refresh manually.";
+    const status = document.getElementById("secureStatus");
+
+    if (status) {
+        status.textContent = "Connection lost. Refresh manually.";
+    }
 };
 
     // --------------------
@@ -167,13 +170,21 @@ if (data.type === "peer-disconnected") {
 }
         // Public Chat
         if(data.chatType === "public") {
-            const messages = document.getElementById("messages");
-            if(!messages) return;
-            const div = document.createElement("div");
-            div.textContent = `[${data.sender}] ${data.message}`;
-            messages.appendChild(div);
-            messages.scrollTop = messages.scrollHeight;
-        }
+
+    const messages = document.getElementById("messages");
+    if(!messages) return;
+
+    const div = document.createElement("div");
+
+    if(data.sender === anonymousId){
+        div.textContent = `[You] ${data.message}`;
+    } else {
+        div.textContent = `[${data.sender}] ${data.message}`;
+    }
+
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
         // 🔐 Trigger handshake when both users present
 if (data.type === "start-handshake") {
 
@@ -413,5 +424,32 @@ if(inviteRoom){
 
     }
 };
+// --------------------
+// Send Public Message
+// --------------------
+window.sendPublicMessage = function () {
 
+    const input = document.getElementById("messageInput");
+    const messages = document.getElementById("messages");
+
+    if (!input || !input.value.trim()) return;
+
+    const msg = input.value;
+
+    safeSend({
+        chatType: "public",
+        message: msg,
+        sender: anonymousId
+    });
+
+    // Show message immediately
+    // if(messages){
+    //     const div = document.createElement("div");
+    //     div.textContent = `[You] ${msg}`;
+    //     messages.appendChild(div);
+    //     messages.scrollTop = messages.scrollHeight;
+    // }
+
+    input.value = "";
+};
 });

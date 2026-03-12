@@ -47,23 +47,24 @@ function connectSocket(){
     };
 
     socket.onmessage = async (event) => {
-
+        console.log("SERVER MESSAGE:", event.data);
         let data;
         try { data = JSON.parse(event.data); }
         catch { return; }
 
         // NEW TOKEN FROM SERVER
-        if(data.type === "newReplyToken"){
+        if(data.replyToken && !replyToken){
 
     replyToken = data.replyToken;
+
     sessionStorage.setItem("replyToken", replyToken);
 
-    document.getElementById("replyToken").textContent = replyToken;
-
-    // Save the existing keypair for this conversation
     await persistCitizenKeys(replyToken);
 
-    alert("Save this Reply Token:\n\n" + replyToken);
+    setTimeout(() => {
+        prompt("Copy and save your Reply Token:", replyToken);
+    },100);
+
     return;
 }
 

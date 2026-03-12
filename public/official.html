@@ -88,6 +88,14 @@ label{
 .logout-btn:hover{
     background:#dc2626;
 }
+.badge{
+    background:#ef4444;
+    color:white;
+    border-radius:50%;
+    padding:2px 8px;
+    font-size:12px;
+    margin-left:6px;
+}
 </style>
 </head>
 
@@ -124,6 +132,15 @@ if(!TOKEN || !DEPT){
 <script>
 
 let ws;
+// 🔊 MESSAGE SOUND
+const messageSound = new Audio("https://notificationsounds.com/storage/sounds/file-sounds-1150-pristine.mp3");
+// 🔓 Unlock audio after first user interaction
+document.addEventListener("click", () => {
+    messageSound.play().then(()=>{
+        messageSound.pause();
+        messageSound.currentTime = 0;
+    }).catch(()=>{});
+},{ once:true });
 let departmentPrivateKey;
 let departmentPublicKeyHex;
 let conversationPublicKeys = {};
@@ -207,7 +224,8 @@ if(msg.chatType === "history"){
 
     // Live message
     if(msg.chatType === "cto"){
-
+        // 🔊 play notification sound
+    messageSound.play().catch(()=>{});
     // Store citizen key
     if(msg.citizenPublicKey){
         conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
@@ -406,10 +424,9 @@ function renderConversationList(conversations){
         div.className = "convo-item";
 
         div.innerHTML = `
-            <b>${c.replyToken.substring(0,10)}...</b>
-            <br>
-            Unread: ${c.unreadCount}
-        `;
+    <b>${c.replyToken.substring(0,10)}...</b>
+    ${c.unreadCount > 0 ? `<span class="badge">${c.unreadCount}</span>` : ""}
+`;
 
         div.onclick = () => {
             loadConversation(c.replyToken);
@@ -427,7 +444,14 @@ function loadConversation(replyToken){
     currentReplyToken = replyToken;  
 
     document.getElementById("replyTokenInput").value = replyToken;
-
+    // remove unread badge
+const items = document.querySelectorAll(".convo-item");
+items.forEach(i=>{
+    if(i.innerText.includes(replyToken.substring(0,10))){
+        const badge = i.querySelector(".badge");
+        if(badge) badge.remove();
+    }
+});
     ws.send(JSON.stringify({
         chatType: "loadHistory",
         department: DEPT,

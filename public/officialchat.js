@@ -266,14 +266,24 @@ async function decryptMessage(data){
         await loadOrCreateCitizenKeys();
     }
 
-    // Use official public key sent in reply
-    const officialPublicKey = await crypto.subtle.importKey(
-        "raw",
-        hexToBuffer(data.officialPublicKey),
-        { name: "ECDH", namedCurve: "P-256" },
-        false,
-        []
-    );
+    let officialPublicKey;
+
+    // If official public key exists in message
+    if(data.officialPublicKey){
+
+        officialPublicKey = await crypto.subtle.importKey(
+            "raw",
+            hexToBuffer(data.officialPublicKey),
+            { name: "ECDH", namedCurve: "P-256" },
+            false,
+            []
+        );
+
+    }else{
+
+        // fallback to department key
+        officialPublicKey = departmentPublicKey;
+    }
 
     const sharedSecret = await crypto.subtle.deriveBits(
         { name: "ECDH", public: officialPublicKey },

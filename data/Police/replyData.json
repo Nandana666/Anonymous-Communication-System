@@ -82,7 +82,7 @@
         "iv": "74f6a1e87a9611dee5f059ce",
         "officialPublicKey": "04c81f6daae3de84e03c87e3cc39267293258bb57d4137140934ca7906a484638086a70b0ad1c3c6887aa427afe642ab1543ac82bf15b904dda5ac5a3fb62dd630",
         "timestamp": 1771767221019,
-        "readByCitizen": false
+        "readByCitizen": true
       },
       {
         "from": "official",
@@ -90,7 +90,7 @@
         "iv": "b1aa376248e39a021ff958ba",
         "officialPublicKey": "04c81f6daae3de84e03c87e3cc39267293258bb57d4137140934ca7906a484638086a70b0ad1c3c6887aa427afe642ab1543ac82bf15b904dda5ac5a3fb62dd630",
         "timestamp": 1771767242902,
-        "readByCitizen": false
+        "readByCitizen": true
       },
       {
         "from": "official",
@@ -98,7 +98,7 @@
         "iv": "a0758969bc71329124643f82",
         "officialPublicKey": "04c81f6daae3de84e03c87e3cc39267293258bb57d4137140934ca7906a484638086a70b0ad1c3c6887aa427afe642ab1543ac82bf15b904dda5ac5a3fb62dd630",
         "timestamp": 1771767271836,
-        "readByCitizen": false
+        "readByCitizen": true
       },
       {
         "from": "citizen",
@@ -114,10 +114,27 @@
         "iv": "8d84386ceb3cb53d672fe23d",
         "officialPublicKey": "04c81f6daae3de84e03c87e3cc39267293258bb57d4137140934ca7906a484638086a70b0ad1c3c6887aa427afe642ab1543ac82bf15b904dda5ac5a3fb62dd630",
         "timestamp": 1771767713295,
+        "readByCitizen": true
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "7e97a67c39a6084cb4bd20e3ad32827a27bdc2775c9f689aa742",
+        "iv": "f3820f7e4d4bdcfb41474e88",
+        "citizenPublicKey": "04ad76052e53f7af4f364ba43db2e10394f8397fcbe78e2085ecd715b70dcd4d9bae91a59c38621aabd422ee3d9f8afb76f40394d2896656cc6b0b320a5593db05",
+        "timestamp": 1772517491424,
+        "readByOfficial": false
+      },
+      {
+        "from": "official",
+        "ciphertext": "c13562ec4ef9e2ef250f5d29423585810ba4",
+        "iv": "4b4105380b4c1cc0eb1dfff8",
+        "officialPublicKey": "04d18097aabc9352e8173cec092e42a67935880e9ceba44397a0a79338ab0db40cda3174f2689837db554b27edac1a3914408cae0ec1559dad438d46592e852443",
+        "timestamp": 1772517501307,
         "readByCitizen": false
       }
     ],
-    "officialPublicKey": "04c81f6daae3de84e03c87e3cc39267293258bb57d4137140934ca7906a484638086a70b0ad1c3c6887aa427afe642ab1543ac82bf15b904dda5ac5a3fb62dd630"
+    "officialPublicKey": "04c81f6daae3de84e03c87e3cc39267293258bb57d4137140934ca7906a484638086a70b0ad1c3c6887aa427afe642ab1543ac82bf15b904dda5ac5a3fb62dd630",
+    "citizenPublicKey": "04ad76052e53f7af4f364ba43db2e10394f8397fcbe78e2085ecd715b70dcd4d9bae91a59c38621aabd422ee3d9f8afb76f40394d2896656cc6b0b320a5593db05"
   },
   "e91f94de35d3223468f98799326d392b4697278ed1daf9ae5465b8c90517a678": {
     "department": "Police",
@@ -137,7 +154,7 @@
         "iv": "9f7240c4231c8bbc72a80417",
         "officialPublicKey": "04c81f6daae3de84e03c87e3cc39267293258bb57d4137140934ca7906a484638086a70b0ad1c3c6887aa427afe642ab1543ac82bf15b904dda5ac5a3fb62dd630",
         "timestamp": 1771767842114,
-        "readByCitizen": false
+        "readByCitizen": true
       },
       {
         "from": "citizen",
@@ -723,5 +740,260 @@
     ],
     "citizenPublicKey": "04c2e712d4d8c1fc4e35733c1ff2258f36b27323ee7c9669e243beeabb982b4225f237d9fe50e796cb923ee6b5384d79064d717eb9b8e49f953c9800e19a50bc77",
     "officialPublicKey": "04d18097aabc9352e8173cec092e42a67935880e9ceba44397a0a79338ab0db40cda3174f2689837db554b27edac1a3914408cae0ec1559dad438d46592e852443"
+  },
+  "c8239c9f64f23240aabdb06910090e035e3c85a7f5d6f6a76b4548587e571588": {
+    "department": "Police",
+    "createdAt": 1773381776204,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "8fc9da8e3f2594d05c8c587c7dfb00fad300fb06475b94b81cd9751988caaf99",
+        "iv": "8b507651b3d81cb2cff1127e",
+        "citizenPublicKey": "046af02e958e8e86c782ad4715109db619a3e4de7c5c9dc5bcfc9fc897e8a17c10032929b10d5ff800b9bdebc296107f76d5a380a0d48c6ffaa86c4715d57d459f",
+        "timestamp": 1773381775909,
+        "readByOfficial": true
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "ccf5732aff564d868092409418df347ac9f845a3872999e4",
+        "iv": "9cedcafff7920dac080715d7",
+        "citizenPublicKey": "040733a6b9bb1bde6f23a3e682e3f3ae93ebbfd26fda1afb4a751ca448dfefd31e1980aee8373147a7799aff94ea27c70f2fcc5084c65b9ab80d86e64ae0047168",
+        "timestamp": 1773381842544,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "5c4bbfc06a902b47362ae0fcaea593361decb574311f",
+        "iv": "bbef16bf81d0e54fd7b2d2f0",
+        "officialPublicKey": "044b260b5eb1074d3b8529c8a4c29385775fa5d822d6519382a7fc7f3912a25477a41a45821b8920b35dd69a945ed8eae2140de67ad6110efbb40a721cb13219ae",
+        "timestamp": 1773381869528,
+        "readByCitizen": false
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "1e7d77d5c0c3d93cba2e08f6b30bb22b0df7ac8f457fe038",
+        "iv": "e78b20a4ef7b1638152e8c6b",
+        "citizenPublicKey": "04bbeb2bf633875cf2a5263a6590b49172fcb80a98c492a356d9481dff7b20cbc04baeb5c8da87d14d8e8eb3cb82d15a708f25b34277b23406cd2513fe49b2d4f4",
+        "timestamp": 1773381932829,
+        "readByOfficial": true
+      }
+    ],
+    "citizenPublicKey": "046af02e958e8e86c782ad4715109db619a3e4de7c5c9dc5bcfc9fc897e8a17c10032929b10d5ff800b9bdebc296107f76d5a380a0d48c6ffaa86c4715d57d459f",
+    "officialPublicKey": "044b260b5eb1074d3b8529c8a4c29385775fa5d822d6519382a7fc7f3912a25477a41a45821b8920b35dd69a945ed8eae2140de67ad6110efbb40a721cb13219ae"
+  },
+  "dde1b6eef9590c569d6601ac8f65ea4a70bef8bde7e1b808c77c2334f6e9840d": {
+    "department": "Police",
+    "createdAt": 1773381960443,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "cff502599941f6e2de83d476aea6879c373d",
+        "iv": "dda33fe594b0c5b6faf06c41",
+        "citizenPublicKey": "04b905b553a6f7eb5b9104883720a1b11cf091e2e2ef11398f002c064be491642e00a6772818b5f3918ff3eba535cdfeee006936e63a388aabc3db7e9a3df5f8d8",
+        "timestamp": 1773381960146,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "b44024f6d7bd84f867fa3528c3b8d21b92c8022b",
+        "iv": "9cc6643bd30d0e099147c1d4",
+        "officialPublicKey": "046971174d6dd495432d2a1d957e0085437ef27cab8c363785932f8ff6318ec3d3d662cf6ca804c1d534f2a90bb707ec6712e078246177876b5e08e732e11099e5",
+        "timestamp": 1773381974663,
+        "readByCitizen": false
+      },
+      {
+        "from": "official",
+        "ciphertext": "860f175add7203fce7b53a08b08588334fe2",
+        "iv": "22e7dc5985fb5e8e06455c14",
+        "officialPublicKey": "046971174d6dd495432d2a1d957e0085437ef27cab8c363785932f8ff6318ec3d3d662cf6ca804c1d534f2a90bb707ec6712e078246177876b5e08e732e11099e5",
+        "timestamp": 1773381994247,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "04b905b553a6f7eb5b9104883720a1b11cf091e2e2ef11398f002c064be491642e00a6772818b5f3918ff3eba535cdfeee006936e63a388aabc3db7e9a3df5f8d8",
+    "officialPublicKey": "046971174d6dd495432d2a1d957e0085437ef27cab8c363785932f8ff6318ec3d3d662cf6ca804c1d534f2a90bb707ec6712e078246177876b5e08e732e11099e5"
+  },
+  "396d5789aef95376cac42033075cc33e42eb03c81b0e39f88fd801e5f30b818b": {
+    "department": "Police",
+    "createdAt": 1773382112767,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "93dcf00b1b0802208a1c0a2dd42a600b1b566a",
+        "iv": "bee82d12bf28d4349936d4dc",
+        "citizenPublicKey": "047c709c992355c01aee7675963a1d5d90ed770f69538d7cd10e60ac82913278282dfa1dacebdd9f0b678d40efd9a4f8fb15dd5d8b36fa5936b2102bdf42f6c478",
+        "timestamp": 1773382112432,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "37033638fc223203ccdb519401141dc69034",
+        "iv": "e78fd37fc55e8fc99da13a46",
+        "officialPublicKey": "0449736afff4552d6c907baf6dd37c69a9e805fe1f802cfcd6c5578789c478f6eec8b0accc2f960860cfac84bf97584697842be508281596d2c96c44bd744c222d",
+        "timestamp": 1773382129266,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "047c709c992355c01aee7675963a1d5d90ed770f69538d7cd10e60ac82913278282dfa1dacebdd9f0b678d40efd9a4f8fb15dd5d8b36fa5936b2102bdf42f6c478",
+    "officialPublicKey": "0449736afff4552d6c907baf6dd37c69a9e805fe1f802cfcd6c5578789c478f6eec8b0accc2f960860cfac84bf97584697842be508281596d2c96c44bd744c222d"
+  },
+  "7373462692fb856f800f4cbf2147547f400d24e25eddd34f7e7ce92f087c35f6": {
+    "department": "Police",
+    "createdAt": 1773382152855,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "dc2eed35b92b95c8955ee8bcc3ddb78cee32",
+        "iv": "ce1e95c4a2e2c855bf78faaa",
+        "citizenPublicKey": "0475ff4ecd03e7214972748cc20d750ef26aa43f5f4e8f65ff141c2260b5e31c31ab0d55cc41970bafa6d69324f81d4579ca20f8775c08412696b7f6c86c4af40e",
+        "timestamp": 1773382152583,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "699f00c8a63e7ee29f1b1478b9c2fdfaa673",
+        "iv": "3bf2a075c22942abd55b8f05",
+        "officialPublicKey": "0449736afff4552d6c907baf6dd37c69a9e805fe1f802cfcd6c5578789c478f6eec8b0accc2f960860cfac84bf97584697842be508281596d2c96c44bd744c222d",
+        "timestamp": 1773382167884,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "0475ff4ecd03e7214972748cc20d750ef26aa43f5f4e8f65ff141c2260b5e31c31ab0d55cc41970bafa6d69324f81d4579ca20f8775c08412696b7f6c86c4af40e",
+    "officialPublicKey": "0449736afff4552d6c907baf6dd37c69a9e805fe1f802cfcd6c5578789c478f6eec8b0accc2f960860cfac84bf97584697842be508281596d2c96c44bd744c222d"
+  },
+  "3730fae3aa682d55e470c153ee83606dead7aa8df1176fe8a672710810912ea9": {
+    "department": "Police",
+    "createdAt": 1773383278222,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "bb84d9c5f3c0341f1b3773e96aa304ccec42070ad5",
+        "iv": "df92711556d143d9d11d6300",
+        "citizenPublicKey": "049fd09ac98b14341191c6a0c3338131f4146ee7b3dc1a56fcf55a9017ecea4ea63d967faf88a74c8612dfd71e74b19ccd4f2ddfb9df3abe307e7ef9540153e1a6",
+        "timestamp": 1773383277772,
+        "readByOfficial": true
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "f5103fe5fd7ab64bc8eb4baa0ac5cfa9844d16087043",
+        "iv": "0bbe0ea25747f1bbb5847f4e",
+        "citizenPublicKey": "0466cb77e9ef16dfee289f5490e71cde920757d914a87c2b96d65416e6154af293bcf144fe73b7e41e7e61a84cde04f83313a7386e3bc8ad30f43fd964187924fe",
+        "timestamp": 1773383319557,
+        "readByOfficial": true
+      }
+    ],
+    "citizenPublicKey": "049fd09ac98b14341191c6a0c3338131f4146ee7b3dc1a56fcf55a9017ecea4ea63d967faf88a74c8612dfd71e74b19ccd4f2ddfb9df3abe307e7ef9540153e1a6"
+  },
+  "d1c4211a410b135b613a37d27d1e61b739877f13d53e6c5260668b78294ef7c7": {
+    "department": "Police",
+    "createdAt": 1773505656696,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "e26bea9471e61b0e7c952282e0ce8373fd4876",
+        "iv": "72843549a17b36b534533eb5",
+        "citizenPublicKey": "048b9020ac0b5700b1b9b712d7e919d48e2226ed1c3b6d339c2a694a6533888f672d26e0e87c0bb8fb3f08c7154d735b27152a79bd7f8f780b6e3da40e66535c0b",
+        "timestamp": 1773505656187,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "3413c160cf1b61f3c6782c3e7eeeae01f711",
+        "iv": "cadd62ef9a07fc1fb9646ed1",
+        "officialPublicKey": "04a1550d6e6a6958b65a91132cc76425a71cd0e367f78a62b2811e859ffb2967d33e18f59b2eb767ae65031f52be754fb82e2f5031a1ed621dd748e5d1e34811d3",
+        "timestamp": 1773505683287,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "048b9020ac0b5700b1b9b712d7e919d48e2226ed1c3b6d339c2a694a6533888f672d26e0e87c0bb8fb3f08c7154d735b27152a79bd7f8f780b6e3da40e66535c0b",
+    "officialPublicKey": "04a1550d6e6a6958b65a91132cc76425a71cd0e367f78a62b2811e859ffb2967d33e18f59b2eb767ae65031f52be754fb82e2f5031a1ed621dd748e5d1e34811d3"
+  },
+  "14554fc270ff96cbef419f9dd2737c1115ce792a077280d6eaea0d90f65e7dcd": {
+    "department": "Police",
+    "createdAt": 1773506721776,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "95f3fb13e2b5ee055178d10e6b3ea447b8dc67",
+        "iv": "daf622ba5223ab1ec952e55c",
+        "citizenPublicKey": "0469a2c2451ae725662ed30335e8465b766ae28230a25adbc075e1c4d894127cafa9d901e81dab18ec7503f9a984e1fedd7f69b5ba6b2b8ee8abcf740c7b8989a1",
+        "timestamp": 1773506721208,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "da553ae9eacf899255a1aeca22c15ba40c56",
+        "iv": "9c3fb33194879bcdb5bad74e",
+        "officialPublicKey": "04fe05b31a5c0b827c03b3ddda1ae5d3d25a300895ed3383b502b4ecdecfdb5157d27add37bc5d45dca14395e9e0405bff2b1fef756c39f513891b7d642c0066d1",
+        "timestamp": 1773506737242,
+        "readByCitizen": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "d9d87c68dc68e67e00d737b7be4fb3934a49fb75814f4d2c128d",
+        "iv": "07fec35108fcec41377efcc3",
+        "officialPublicKey": "04fe05b31a5c0b827c03b3ddda1ae5d3d25a300895ed3383b502b4ecdecfdb5157d27add37bc5d45dca14395e9e0405bff2b1fef756c39f513891b7d642c0066d1",
+        "timestamp": 1773508036918,
+        "readByCitizen": true
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "02484ec883236d5af290a0a9ac0271d30d6092265cfd2d4a79f063",
+        "iv": "e11f23d5536f6f19f1256466",
+        "citizenPublicKey": "04d7e7dd83f225bcedfdb2b952844c1c06a6508feb6e1edd3975b8f7f9153935d7e89db757fb6cabd11f3169fdc6530f1e775d9bc6741fbbd43acecfab5124f0f0",
+        "timestamp": 1773508240788,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "64200cf1e40bcb87cbc35168798d953a189adb28",
+        "iv": "c556dd125c2ee0549fdd78db",
+        "officialPublicKey": "04fe05b31a5c0b827c03b3ddda1ae5d3d25a300895ed3383b502b4ecdecfdb5157d27add37bc5d45dca14395e9e0405bff2b1fef756c39f513891b7d642c0066d1",
+        "timestamp": 1773508257889,
+        "readByCitizen": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "c47fe57dc56da8c5ecf3289a854111589f00883ae9",
+        "iv": "0b17acdb50742b605b4ee264",
+        "officialPublicKey": "04fe05b31a5c0b827c03b3ddda1ae5d3d25a300895ed3383b502b4ecdecfdb5157d27add37bc5d45dca14395e9e0405bff2b1fef756c39f513891b7d642c0066d1",
+        "timestamp": 1773508300939,
+        "readByCitizen": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "3b3ea7f70ec785cce656fea58e71ec0643229f9cc98ed6f1cc",
+        "iv": "9f14df32b4834cbe56ead403",
+        "officialPublicKey": "04fe05b31a5c0b827c03b3ddda1ae5d3d25a300895ed3383b502b4ecdecfdb5157d27add37bc5d45dca14395e9e0405bff2b1fef756c39f513891b7d642c0066d1",
+        "timestamp": 1773508304906,
+        "readByCitizen": true
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "9f840dc7ba4c871d4dea08e571880957d76c",
+        "iv": "4e5021aca6e0e80c96fdfd2c",
+        "citizenPublicKey": "04d7e7dd83f225bcedfdb2b952844c1c06a6508feb6e1edd3975b8f7f9153935d7e89db757fb6cabd11f3169fdc6530f1e775d9bc6741fbbd43acecfab5124f0f0",
+        "timestamp": 1773508731181,
+        "readByOfficial": true
+      },
+      {
+        "from": "citizen",
+        "ciphertext": "d93395dcb3f3089173f261a884dcabcd7620d839702b94e2a065da",
+        "iv": "8657f3041f86a60a440bf380",
+        "citizenPublicKey": "04d7e7dd83f225bcedfdb2b952844c1c06a6508feb6e1edd3975b8f7f9153935d7e89db757fb6cabd11f3169fdc6530f1e775d9bc6741fbbd43acecfab5124f0f0",
+        "timestamp": 1773508873868,
+        "readByOfficial": false
+      },
+      {
+        "from": "official",
+        "ciphertext": "02ea2db2e913fdcb0b44d3e966ca08343c32e334758612abea5b",
+        "iv": "96ad2363071709b2dace9cd0",
+        "officialPublicKey": "04fe05b31a5c0b827c03b3ddda1ae5d3d25a300895ed3383b502b4ecdecfdb5157d27add37bc5d45dca14395e9e0405bff2b1fef756c39f513891b7d642c0066d1",
+        "timestamp": 1773508881468,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "0469a2c2451ae725662ed30335e8465b766ae28230a25adbc075e1c4d894127cafa9d901e81dab18ec7503f9a984e1fedd7f69b5ba6b2b8ee8abcf740c7b8989a1",
+    "officialPublicKey": "04fe05b31a5c0b827c03b3ddda1ae5d3d25a300895ed3383b502b4ecdecfdb5157d27add37bc5d45dca14395e9e0405bff2b1fef756c39f513891b7d642c0066d1"
   }
 }

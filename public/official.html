@@ -373,20 +373,30 @@ async function initDepartmentKey(){
     const storedPublic  = localStorage.getItem("DEPT_PUBLIC_KEY_" + DEPT);
 
     if(storedPrivate && storedPublic){
+        try{
 
-        departmentPrivateKey = await crypto.subtle.importKey(
-            "pkcs8",
-            hexToBuffer(storedPrivate),
-            { name: "ECDH", namedCurve: "P-256" },
-            false,
-            ["deriveBits"]
-        );
+            departmentPrivateKey = await crypto.subtle.importKey(
+                "pkcs8",
+                hexToBuffer(storedPrivate),
+                { name: "ECDH", namedCurve: "P-256" },
+                false,
+                ["deriveBits"]
+            );
 
-        departmentPublicKeyHex = storedPublic;
+            departmentPublicKeyHex = storedPublic;
 
-        return storedPublic;
+            console.log("Loaded existing department key");
+
+            return storedPublic;
+
+        }catch(err){
+
+            console.error("Key import failed:", err);
+            alert("Department key corrupted. Old messages cannot be decrypted.");
+            return storedPublic;
+        }
     }
-
+     console.log("Generating new department key");
     const keyPair = await crypto.subtle.generateKey(
         { name: "ECDH", namedCurve: "P-256" },
         true,

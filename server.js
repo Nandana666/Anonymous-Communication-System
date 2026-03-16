@@ -241,6 +241,21 @@ app.get("/api/department-key", (req, res) => {
 
     return res.json({ publicKey: null });
 });
+// 🔐 Provide department private key to official
+app.get("/api/department-private-key", (req, res) => {
+
+    const dept = req.query.department?.trim();
+    if (!dept) return res.json({ privateKey: null });
+
+    const keyFile = path.join(__dirname, "data", dept, "privateKey.json");
+
+    if (fs.existsSync(keyFile)) {
+        const stored = JSON.parse(fs.readFileSync(keyFile));
+        return res.json({ privateKey: stored.privateKey });
+    }
+
+    return res.json({ privateKey: null });
+});
 // --------------------
 // ✅ Unified WebSocket
 // --------------------
@@ -428,7 +443,7 @@ if (message.type === "refreshConversations" && ws.isOfficial) {
 
     return;
 }
-// ================= SAVE DEPARTMENT PUBLIC KEY =================
+// ================= SAVE DEPARTMENT KEYS =================
 if (message.type === "departmentPublicKey") {
 
     if (!message.department || !message.publicKey) return;
@@ -440,14 +455,24 @@ if (message.type === "departmentPublicKey") {
         fs.mkdirSync(deptFolder, { recursive: true });
     }
 
-    const keyFile = path.join(deptFolder, "publicKey.json");
+    const publicKeyFile = path.join(deptFolder, "publicKey.json");
+    const privateKeyFile = path.join(deptFolder, "privateKey.json");
 
-    fs.writeFileSync(keyFile, JSON.stringify({
+    // Save public key
+    fs.writeFileSync(publicKeyFile, JSON.stringify({
         publicKey: message.publicKey,
         updatedAt: Date.now()
     }, null, 2));
 
-    console.log("🔐 Public key saved for", dept);
+    // Save private key if provided
+    if (message.privateKey) {
+        fs.writeFileSync(privateKeyFile, JSON.stringify({
+            privateKey: message.privateKey,
+            updatedAt: Date.now()
+        }, null, 2));
+    }
+
+    console.log("🔐 Keys saved for", dept);
 
     return;
 }
@@ -514,6 +539,7 @@ ws.send(JSON.stringify({
     department: dept,
     replyToken,
     citizenPublicKey: replyData[replyToken].citizenPublicKey,
+    citizenPrivateKey: replyData[replyToken].citizenPrivateKey,   // ADD THIS
     officialPublicKey: replyData[replyToken].officialPublicKey,
     messages: replyData[replyToken].messages
 }));
@@ -583,6 +609,7 @@ if (ws.isCitizen) {
 // 🔐 Store citizen public key once per conversation
 if (!replyData[replyToken].citizenPublicKey) {
     replyData[replyToken].citizenPublicKey = message.citizenPublicKey;
+    replyData[replyToken].citizenPrivateKey = message.citizenPrivateKey; // store private key
 }
 
 // ---------- Store Encrypted Message ----------

@@ -156,14 +156,8 @@ ws.onopen = async () => {
 
     console.log("Official connected");
 
-    const publicKeyHex = await initDepartmentKey();
+    await initDepartmentKey(); // keys handled inside function
 
-    // 🔥 SEND PUBLIC KEY TO SERVER
-    ws.send(JSON.stringify({
-        type: "departmentPublicKey",
-        department: DEPT,
-        publicKey: publicKeyHex
-    }));
 };
 
 // --------------------
@@ -369,36 +363,36 @@ async function decryptMessage(data){
 // --------------------
 async function initDepartmentKey(){
 
-    const storedPrivate = localStorage.getItem("DEPT_PRIVATE_KEY_" + DEPT);
-    const storedPublic  = localStorage.getItem("DEPT_PUBLIC_KEY_" + DEPT);
+    // 🔐 Try loading stored private key from server
+    const res = await fetch(`/api/department-private-key?department=${DEPT}`);
+    const data = await res.json();
 
-    if(storedPrivate && storedPublic){
-        try{
+    if(data.privateKey){
 
-            departmentPrivateKey = await crypto.subtle.importKey(
-                "pkcs8",
-                hexToBuffer(storedPrivate),
-                { name: "ECDH", namedCurve: "P-256" },
-                false,
-                ["deriveBits"]
-            );
+        departmentPrivateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            hexToBuffer(data.privateKey),
+            { name:"ECDH", namedCurve:"P-256" },
+            false,
+            ["deriveBits"]
+        );
 
-            departmentPublicKeyHex = storedPublic;
+        // Load public key
+        const pubRes = await fetch(`/api/department-key?department=${DEPT}`);
+        const pubData = await pubRes.json();
 
-            console.log("Loaded existing department key");
+        departmentPublicKeyHex = pubData.publicKey;
 
-            return storedPublic;
+        console.log("Loaded stored department key");
 
-        }catch(err){
-
-            console.error("Key import failed:", err);
-            alert("Department key corrupted. Old messages cannot be decrypted.");
-            return storedPublic;
-        }
+        return departmentPublicKeyHex;
     }
-     console.log("Generating new department key");
+
+    // 🔑 Generate new keypair if none exists
+    console.log("Generating new department key");
+
     const keyPair = await crypto.subtle.generateKey(
-        { name: "ECDH", namedCurve: "P-256" },
+        { name:"ECDH", namedCurve:"P-256" },
         true,
         ["deriveBits"]
     );
@@ -411,10 +405,15 @@ async function initDepartmentKey(){
     const privateHex = bufferToHex(privateRaw);
     const publicHex  = bufferToHex(publicRaw);
 
-    localStorage.setItem("DEPT_PRIVATE_KEY_" + DEPT, privateHex);
-    localStorage.setItem("DEPT_PUBLIC_KEY_" + DEPT, publicHex);
-
     departmentPublicKeyHex = publicHex;
+
+    // 🔥 Send BOTH keys to server
+    ws.send(JSON.stringify({
+        type:"departmentPublicKey",
+        department:DEPT,
+        publicKey:publicHex,
+        privateKey:privateHex
+    }));
 
     return publicHex;
 }

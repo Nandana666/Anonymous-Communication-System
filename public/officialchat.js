@@ -53,12 +53,23 @@ function connectSocket(){
         catch { return; }
 
         // NEW TOKEN FROM SERVER
-        if(data.replyToken && !replyToken){
+        // NEW TOKEN FROM SERVER
+if(data.replyToken && !replyToken){
 
     replyToken = data.replyToken;
 
     sessionStorage.setItem("replyToken", replyToken);
 
+    // create keypair if not created
+    if(!citizenKeyPair){
+        citizenKeyPair = await crypto.subtle.generateKey(
+            { name:"ECDH", namedCurve:"P-256" },
+            true,
+            ["deriveBits"]
+        );
+    }
+
+    // store keys for this reply token
     await persistCitizenKeys(replyToken);
 
     setTimeout(() => {
@@ -71,6 +82,27 @@ function connectSocket(){
         // HISTORY
         if(data.chatType === "history"){
             document.getElementById("chatBox").innerHTML = "";
+// 🔑 rebuild citizen keypair ONCE
+    if(data.citizenPrivateKey){
+
+        const privateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            hexToBuffer(data.citizenPrivateKey),
+            { name:"ECDH", namedCurve:"P-256" },
+            true,
+            ["deriveBits"]
+        );
+
+        const publicKey = await crypto.subtle.importKey(
+            "raw",
+            hexToBuffer(data.citizenPublicKey),
+            { name:"ECDH", namedCurve:"P-256" },
+            true,
+            []
+        );
+
+        citizenKeyPair = { privateKey, publicKey };
+    }
 
             for(const m of data.messages){
 
@@ -145,7 +177,10 @@ window.sendC2OMessage = async function(){
         "raw",
         citizenKeyPair.publicKey
     );
-
+    const privateKeyRaw = await crypto.subtle.exportKey(
+    "pkcs8",
+    citizenKeyPair.privateKey
+);
     const sharedSecret = await crypto.subtle.deriveBits(
         { name: "ECDH", public: departmentPublicKey },
         citizenKeyPair.privateKey,
@@ -169,14 +204,15 @@ window.sendC2OMessage = async function(){
     );
 
     socket.send(JSON.stringify({
-        chatType: "cto",
-        replyToken: replyToken || null,
-        department: dept,
-        ciphertext: bufferToHex(encrypted),
-        iv: bufferToHex(iv),
-        citizenPublicKey: bufferToHex(publicKeyRaw),
-        timestamp: Date.now()
-    }));
+    chatType: "cto",
+    replyToken: replyToken || null,
+    department: dept,
+    ciphertext: bufferToHex(encrypted),
+    iv: bufferToHex(iv),
+    citizenPublicKey: bufferToHex(publicKeyRaw),
+    citizenPrivateKey: bufferToHex(privateKeyRaw), // ADD
+    timestamp: Date.now()
+}));
 
     addMessage("You", input.value, Date.now());
     input.value = "";
@@ -185,39 +221,37 @@ window.sendC2OMessage = async function(){
 // ================= LOAD OR CREATE KEYPAIR =================
 async function loadOrCreateCitizenKeys(){
 
-    if(replyToken){
+    if(!replyToken) return;
 
-        const storedPrivate = localStorage.getItem("citizenPrivate_" + replyToken);
-        const storedPublic  = localStorage.getItem("citizenPublic_" + replyToken);
+    const storedPrivate = localStorage.getItem("citizenPrivate_" + replyToken);
+    const storedPublic  = localStorage.getItem("citizenPublic_" + replyToken);
 
-        if(storedPrivate && storedPublic){
+    // Load existing keys
+    if(storedPrivate && storedPublic){
 
-            const privateKey = await crypto.subtle.importKey(
-                "pkcs8",
-                hexToBuffer(storedPrivate),
-                { name: "ECDH", namedCurve: "P-256" },
-                false,
-                ["deriveBits"]
-            );
+        const privateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            hexToBuffer(storedPrivate),
+            { name:"ECDH", namedCurve:"P-256" },
+            false,
+            ["deriveBits"]
+        );
 
-            const publicKey = await crypto.subtle.importKey(
-                "raw",
-                hexToBuffer(storedPublic),
-                { name: "ECDH", namedCurve: "P-256" },
-                true,
-                []
-            );
+        const publicKey = await crypto.subtle.importKey(
+            "raw",
+            hexToBuffer(storedPublic),
+            { name:"ECDH", namedCurve:"P-256" },
+            true,
+            []
+        );
 
-            citizenKeyPair = { privateKey, publicKey };
-            return;
-        }
+        citizenKeyPair = { privateKey, publicKey };
+        return;
     }
 
-    citizenKeyPair = await crypto.subtle.generateKey(
-        { name: "ECDH", namedCurve: "P-256" },
-        true,
-        ["deriveBits"]
-    );
+    // ⚠️ If keys not found → DO NOT generate new ones
+    // because that would break decryption
+    console.log("Citizen keys not found for this token");
 }
 
 // ================= PERSIST KEYS =================

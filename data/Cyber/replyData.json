@@ -1,0 +1,52 @@
+{
+  "0e00ef6194d3b1959151e563529d5ef7524fa0db53e8ba3cdf3e2f1ee81834cf": {
+    "department": "Cyber",
+    "createdAt": 1774239755605,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "66400611717f6818e37e1bf5390bfda9faa11786542922",
+        "iv": "26adc8bf8a1f3d705c37d895",
+        "citizenPublicKey": "043b878efd9e17855873ec09264b6d47f31ab549498d2aee38356a536d8566dcf6e73420d75adc1fa9f63751c62cdad4c0b10cb7d0d9c50d80d393135fbe86fafd",
+        "timestamp": 1774239754885,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "e9627f566388ae0944cc78d5f4845b352280da3f",
+        "iv": "d704c692587a99c24ca0e9ef",
+        "officialPublicKey": "0464acdcd5435fb1ad9c3bcd0f5075239d90d1288b8dc7ca1054f26059e277b091bc2630cffb90a88551c5fd22293177d87868f2e58ad4b096b61753afc902bb77",
+        "timestamp": 1774239765935,
+        "readByCitizen": true
+      }
+    ],
+    "citizenPublicKey": "043b878efd9e17855873ec09264b6d47f31ab549498d2aee38356a536d8566dcf6e73420d75adc1fa9f63751c62cdad4c0b10cb7d0d9c50d80d393135fbe86fafd",
+    "citizenPrivateKey": "308187020100301306072a8648ce3d020106082a8648ce3d030107046d306b0201010420fe6acc39914d17ed79b68f7260c0caac11bda141dbc8a75ebaa669175f4501d0a144034200043b878efd9e17855873ec09264b6d47f31ab549498d2aee38356a536d8566dcf6e73420d75adc1fa9f63751c62cdad4c0b10cb7d0d9c50d80d393135fbe86fafd",
+    "officialPublicKey": "0464acdcd5435fb1ad9c3bcd0f5075239d90d1288b8dc7ca1054f26059e277b091bc2630cffb90a88551c5fd22293177d87868f2e58ad4b096b61753afc902bb77"
+  },
+  "99498ed991d23b9afd3addd0fac64246ff9f3282e74a8770dc88ddc2be6fe564": {
+    "department": "Cyber",
+    "createdAt": 1774240285467,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "74617d4aa727545316062ee05b23d9fa4c987ea711",
+        "iv": "2110a42649582fdb69ebb60c",
+        "citizenPublicKey": "048bb28a326f3e699538a01f7f4f3691a240521a62ed2079cd007af9f1a129dbde463d2e4e2c6060abb775f1ccc30e1913387cb6d5dbaef5a80f2e303e5f536d36",
+        "timestamp": 1774240284746,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "ea4f35dd393c70ca8e74451c0ac1a5c8710575f738",
+        "iv": "9a061e5326f93a5bbcbc8994",
+        "officialPublicKey": "0464acdcd5435fb1ad9c3bcd0f5075239d90d1288b8dc7ca1054f26059e277b091bc2630cffb90a88551c5fd22293177d87868f2e58ad4b096b61753afc902bb77",
+        "timestamp": 1774240296979,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "048bb28a326f3e699538a01f7f4f3691a240521a62ed2079cd007af9f1a129dbde463d2e4e2c6060abb775f1ccc30e1913387cb6d5dbaef5a80f2e303e5f536d36",
+    "citizenPrivateKey": "308187020100301306072a8648ce3d020106082a8648ce3d030107046d306b0201010420c1f561bd92e119786f86744f69e541e4d91100c3a1d44991a38a5b352ffd8d6ca144034200048bb28a326f3e699538a01f7f4f3691a240521a62ed2079cd007af9f1a129dbde463d2e4e2c6060abb775f1ccc30e1913387cb6d5dbaef5a80f2e303e5f536d36",
+    "officialPublicKey": "0464acdcd5435fb1ad9c3bcd0f5075239d90d1288b8dc7ca1054f26059e277b091bc2630cffb90a88551c5fd22293177d87868f2e58ad4b096b61753afc902bb77"
+  }
+}

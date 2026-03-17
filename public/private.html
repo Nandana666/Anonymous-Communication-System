@@ -118,8 +118,9 @@ input:focus{
     <hr>
 
     <!-- Create Room -->
-    <button onclick="createRoom()">Create Secure Private Room</button>
-
+    <!-- Create Room -->
+<input type="password" id="createRoomPassword" placeholder="Set Room Password">
+<button onclick="createRoom()">Create Secure Private Room</button>
     <!-- <div id="generatedRoom" style="margin:10px 0; font-weight:bold;"></div> -->
 
     <!-- Share Invite -->
@@ -138,10 +139,9 @@ Copy Secure Invite Link
 
     <hr>
 
-    <!-- Join Room -->
-    <input type="text" id="roomInput" placeholder="Enter Room ID">
-    <button onclick="joinPrivateRoom()">Join Room</button>
-
+   <input type="text" id="roomInput" placeholder="Enter Room Code">
+<input type="password" id="roomPassword" placeholder="Enter Password">
+<button onclick="joinPrivateRoom()">Join Room</button>
     <!-- Secure Status -->
     <div id="secureStatus"
          style="margin:15px 0; font-weight:bold; color:orange;">

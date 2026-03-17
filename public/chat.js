@@ -25,6 +25,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         setTimeout(() => safeSend(data), 200);
     }
 }
+async function hashPassword(password) {
+    const enc = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", enc);
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+}
     socket.onopen = () => console.log("✅ WebSocket connected");
     socket.onerror = (err) => console.error("❌ WebSocket error:", err);
     socket.onclose = () => {
@@ -88,15 +95,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Create Private Room
     // --------------------
    window.createRoom = async function() {
-
     try {
+        const rawPassword = document.getElementById("createRoomPassword").value.trim();
+        if (!rawPassword) return alert("Enter room password!");
 
-        privateRoomCode =
-            Math.random().toString(36).substring(2,8).toUpperCase();
+        const hashedPassword = await hashPassword(rawPassword);
 
-        // SHOW SHARE BUTTON AFTER ROOM CREATION
+        privateRoomCode = Math.random().toString(36).substring(2,8).toUpperCase();
+
         document.getElementById("shareBtn").style.display = "inline-block";
-        // 🔐 Always regenerate fresh key
+
         sessionKeyPair = await crypto.subtle.generateKey(
             { name: "ECDH", namedCurve: "P-256" },
             true,
@@ -109,10 +117,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         safeSend({
-    type: "join-private",
-    room: privateRoomCode,
-    anonId: anonymousId
-});
+            type: "join-private",
+            room: privateRoomCode,
+            anonId: anonymousId,
+            password: hashedPassword
+        });
 
     } catch (err) {
         console.error("createRoom error:", err);
@@ -124,9 +133,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Join Private Room
     // --------------------
     window.joinPrivateRoom = async function() {
-
     privateRoomCode = document.getElementById("roomInput").value.trim();
-    if(!privateRoomCode) return alert("Enter room code!");
+    const rawPassword = document.getElementById("roomPassword").value.trim();
+
+    if (!privateRoomCode) return alert("Enter room code!");
+    if (!rawPassword) return alert("Enter room password!");
+
+    const hashedPassword = await hashPassword(rawPassword);
 
     sessionKeyPair = await crypto.subtle.generateKey(
         { name: "ECDH", namedCurve: "P-256" },
@@ -135,10 +148,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
     safeSend({
-    type: "join-private",
-    room: privateRoomCode,
-    anonId: anonymousId
-});
+        type: "join-private",
+        room: privateRoomCode,
+        anonId: anonymousId,
+        password: hashedPassword
+    });
 };
 
     
@@ -155,6 +169,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch {
             return;
         }
+        if (data.type === "join-failed") {
+    alert(data.reason || "Failed to join private room");
+    return;
+}
         // 🔴 Peer disconnected handler
 if (data.type === "peer-disconnected") {
 
@@ -384,21 +402,8 @@ if(data.type === "signed-ecdh" &&
     const params = new URLSearchParams(window.location.search);
 const inviteRoom = params.get("room");
 
-if(inviteRoom){
-
-    privateRoomCode = inviteRoom;
-
-    sessionKeyPair = await crypto.subtle.generateKey(
-        { name: "ECDH", namedCurve: "P-256" },
-        true,
-        ["deriveKey"]
-    );
-
-    safeSend({
-        type: "join-private",
-        room: privateRoomCode,
-        anonId: anonymousId
-    });
+if (inviteRoom) {
+    document.getElementById("roomInput").value = inviteRoom;
 }
     // --------------------
     // 🔗 Share Secure Invite

@@ -765,34 +765,51 @@ if (!replyData[replyToken].officialPublicKey && message.officialPublicKey) {
 if (message.type === "join-private") {
 
     const room = message.room;
-    if (!room) return;
+    const password = message.password;
 
+    if (!room || !password) return;
+
+    // First user creates room
     if (!securePrivateRooms.has(room)) {
-        securePrivateRooms.set(room, new Set());
+
+        securePrivateRooms.set(room, {
+            clients: new Set(),
+            password: password
+        });
+
     }
 
-    const roomSet = securePrivateRooms.get(room);
+    const roomObj = securePrivateRooms.get(room);
 
-    // Reject if already 2 users
-    if (roomSet.size >= 2) {
+    // ❌ PASSWORD CHECK
+    if (roomObj.password !== password) {
         ws.send(JSON.stringify({
-            type: "room-full"
+            type: "join-failed",
+            reason: "Wrong password"
         }));
         return;
     }
 
-    roomSet.add(ws);
+    // ❌ ROOM FULL CHECK
+    if (roomObj.clients.size >= 2) {
+        ws.send(JSON.stringify({
+            type: "join-failed",
+            reason: "Room full"
+        }));
+        return;
+    }
+
+    roomObj.clients.add(ws);
     ws.secureRoom = room;
 
     ws.send(JSON.stringify({
         type: "room-joined",
-        count: roomSet.size
+        count: roomObj.clients.size
     }));
 
-    
-    // If now 2 users, trigger handshake start
-    if (roomSet.size === 2) {
-        roomSet.forEach(client => {
+    // Start handshake when 2 users joined
+    if (roomObj.clients.size === 2) {
+        roomObj.clients.forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify({
                     type: "start-handshake"
@@ -803,13 +820,14 @@ if (message.type === "join-private") {
 
     return;
 }
-// Relay signed ECDH
+// 🔐 Relay signed ECDH (KEY EXCHANGE)
 if (message.type === "signed-ecdh") {
 
     const room = message.room;
     if (!room || !securePrivateRooms.has(room)) return;
 
-    const roomSet = securePrivateRooms.get(room);
+    const roomObj = securePrivateRooms.get(room);
+    const roomSet = roomObj.clients;
 
     roomSet.forEach(client => {
         if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -819,15 +837,13 @@ if (message.type === "signed-ecdh") {
 
     return;
 }
-
 // Relay encrypted private message
 if (message.chatType === "private") {
 
     const room = message.room;
     if (!room || !securePrivateRooms.has(room)) return;
-
-    const roomSet = securePrivateRooms.get(room);
-
+    const roomObj = securePrivateRooms.get(room);
+const roomSet = roomObj.clients;
     if (roomSet.size !== 2) return;
 
     roomSet.forEach(client => {
@@ -849,7 +865,8 @@ if (message.chatType === "private") {
 
     if (!securePrivateRooms.has(room)) return;
 
-    const roomSet = securePrivateRooms.get(room);
+  const roomObj = securePrivateRooms.get(room);
+const roomSet = roomObj.clients;
 
     roomSet.delete(ws);
 

@@ -1,0 +1,27 @@
+{
+  "4b5ad9a9bc1cd522364e78e1de00fc0a2655f78d81ac64762a53dd0601d3bd99": {
+    "department": "Health",
+    "createdAt": 1774240197737,
+    "messages": [
+      {
+        "from": "citizen",
+        "ciphertext": "1db3c2c7f055a3611a5c48572fb29915d8a62e67",
+        "iv": "5fc265b1a03cc788f0061754",
+        "citizenPublicKey": "04f2b6d52c64bc5c23422d1c000b684705fc338e0a5326da9ae5f1ea2cb6c54510463c34f1cceb0df8557517cde028782dd477a9e3288b33664a7df3f34968a1b2",
+        "timestamp": 1774240197010,
+        "readByOfficial": true
+      },
+      {
+        "from": "official",
+        "ciphertext": "987c5b7f19e57ba3b2cfceff2c8cb2d17c976404ee",
+        "iv": "a3c7df3e9f7c7066b6f4db8f",
+        "officialPublicKey": "04866ede28bb257ed7e714055251a5e1e5a05bf2210ab9e4dda6ae062e2b91b218ad14c834dc82305c5097069a93c7b90d4cb689f6e65f0dfcf4d050f0379038a2",
+        "timestamp": 1774240208577,
+        "readByCitizen": false
+      }
+    ],
+    "citizenPublicKey": "04f2b6d52c64bc5c23422d1c000b684705fc338e0a5326da9ae5f1ea2cb6c54510463c34f1cceb0df8557517cde028782dd477a9e3288b33664a7df3f34968a1b2",
+    "citizenPrivateKey": "308187020100301306072a8648ce3d020106082a8648ce3d030107046d306b0201010420099767456c05de7d8d8de21fc37a9f78cde8a08f53481d67e010afbdabcefd01a14403420004f2b6d52c64bc5c23422d1c000b684705fc338e0a5326da9ae5f1ea2cb6c54510463c34f1cceb0df8557517cde028782dd477a9e3288b33664a7df3f34968a1b2",
+    "officialPublicKey": "04866ede28bb257ed7e714055251a5e1e5a05bf2210ab9e4dda6ae062e2b91b218ad14c834dc82305c5097069a93c7b90d4cb689f6e65f0dfcf4d050f0379038a2"
+  }
+}

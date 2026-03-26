@@ -5,7 +5,36 @@ const WebSocket = require("ws");
 const crypto = require("crypto");
 const cors = require("cors");
 const fs = require("fs");
+const nodemailer = require("nodemailer");
 
+const otpStore = new Map();
+const verifiedOfficials = new Set();
+
+function generateOTP(){
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function isValidOfficialEmail(email){
+    const allowedDomains = [
+        "police.gov.in",
+        "cyber.gov.in",
+        "fire.gov.in",
+        "health.gov.in",
+        "gov.in"
+    ];
+
+    return allowedDomains.some(domain =>
+        email.toLowerCase().endsWith("@" + domain)
+    );
+}
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: "yourgmail@gmail.com",
+        pass: "your_app_password"
+    }
+});
 const app = express();
 app.use(cors({
     origin: "*",
@@ -166,36 +195,45 @@ app.get("/api/admin/approved", (req, res) => {
 app.post("/api/official/request", (req, res) => {
 
     const { email, department } = req.body;
+    const normalizedEmail = email?.toLowerCase();
 
     if (!email || !department)
         return res.status(400).json({ error: "All fields required" });
 
-    if (data.approvedOfficials[email])
+    if (!isValidOfficialEmail(normalizedEmail))
+        return res.status(400).json({ error: "Only official domain emails allowed" });
+
+    if (!verifiedOfficials.has(normalizedEmail))
+        return res.status(403).json({ error: "Email verification required before signup" });
+
+    if (data.approvedOfficials[normalizedEmail])
         return res.status(400).json({ error: "Already approved" });
 
-    if (data.pendingOfficials[email])
+    if (data.pendingOfficials[normalizedEmail])
         return res.status(400).json({ error: "Already requested" });
 
-    data.pendingOfficials[email] = { email, department };
-    saveData(data);   
+    data.pendingOfficials[normalizedEmail] = { email: normalizedEmail, department };
+    saveData(data);
+
     res.json({ message: "Signup request submitted!" });
 });
 
-
 // Check approval
+
 app.get("/api/official/status", (req, res) => {
 
     const { email } = req.query;
+    const normalizedEmail = email?.toLowerCase();   // ✅ FIX
 
     if (!email)
         return res.status(400).json({ error: "Email required" });
 
-    if (!data.approvedOfficials[email])
+    if (!data.approvedOfficials[normalizedEmail])
         return res.json({ approved: false });
 
     res.json({
         approved: true,
-        accessKey: data.approvedOfficials[email].accessKey
+        accessKey: data.approvedOfficials[normalizedEmail].accessKey
     });
 });
 
@@ -203,11 +241,15 @@ app.get("/api/official/status", (req, res) => {
 app.post("/api/official/login", (req, res) => {
 
     const { email, accessKey } = req.body;
+    const normalizedEmail = email?.toLowerCase();
 
     if (!email || !accessKey)
         return res.status(400).json({ error: "All fields required" });
 
-    const official = data.approvedOfficials[email];
+    if (!isValidOfficialEmail(normalizedEmail))
+        return res.status(401).json({ error: "Unauthorized domain" });
+
+    const official = data.approvedOfficials[normalizedEmail];
 
     if (!official)
         return res.status(401).json({ error: "Official not approved" });
@@ -216,14 +258,12 @@ app.post("/api/official/login", (req, res) => {
         return res.status(401).json({ error: "Invalid access key" });
 
     const token = crypto.randomBytes(16).toString("hex");
-    officialTokens.set(token, Date.now() + 1000 * 60 * 60 * 4); // 4 hours
-
+    officialTokens.set(token, Date.now() + 1000 * 60 * 60 * 4);
 
     res.json({
         success: true,
         token,
-        department: official.department   
-
+        department: official.department
     });
 });
 // 🔐 Provide department public key to citizens
@@ -255,6 +295,60 @@ app.get("/api/department-private-key", (req, res) => {
     }
 
     return res.json({ privateKey: null });
+});
+// Send OTP to official email
+app.post("/api/official/send-otp", async (req, res) => {
+
+    const { email } = req.body;
+    const normalizedEmail = email?.toLowerCase();
+
+    if (!email)
+        return res.status(400).json({ error: "Email required" });
+
+    if (!isValidOfficialEmail(normalizedEmail))
+        return res.status(400).json({ error: "Only official domain emails allowed" });
+
+    const otp = generateOTP();
+    console.log("OTP for", email, "is:", otp); // 🔥 DEMO LINE
+
+    otpStore.set(normalizedEmail, otp);
+    res.json({
+    message: "OTP generated (check server console)"
+});
+    // try {
+    //     await transporter.sendMail({
+    //         from: "yourgmail@gmail.com",
+    //         to: email,
+    //         subject: "Official Verification OTP",
+    //         text: `Your OTP is: ${otp}`
+    //     });
+
+    //     res.json({ message: "OTP sent successfully" });
+
+    // } catch (err) {
+    //     console.error("OTP send failed:", err);
+    //     res.status(500).json({ error: "Failed to send OTP" });
+    // }
+    
+});
+// Verify OTP
+app.post("/api/official/verify-otp", (req, res) => {
+
+    const { email, otp } = req.body;
+
+    if (!email || !otp)
+        return res.status(400).json({ error: "Email and OTP required" });
+
+    const savedOtp = otpStore.get(email.toLowerCase());
+
+    if (!savedOtp || savedOtp !== otp) {
+        return res.status(400).json({ error: "Invalid OTP" });
+    }
+
+    otpStore.delete(email.toLowerCase());
+    verifiedOfficials.add(email.toLowerCase());
+
+    res.json({ success: true, message: "Email verified successfully" });
 });
 // --------------------
 // ✅ Unified WebSocket

@@ -157,16 +157,21 @@ async function fetchTables(){
     }
 }
 async function approve(email){
+
+    const normalizedEmail = email.toLowerCase(); // 🔥 FIX
+
     const res = await fetch("/api/admin/approve",{
         method:"POST",
         headers:{
             "Authorization":"Bearer "+TOKEN,
             "Content-Type":"application/json"
         },
-        body:JSON.stringify({email})
+        body:JSON.stringify({email: normalizedEmail})
     });
+
     const data = await res.json();
-    alert("Approved: "+data.accessKey);
+
+    alert("Approved: " + (data.accessKey || data.error));
     fetchTables();
 }
 fetchTables();

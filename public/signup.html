@@ -4,34 +4,31 @@
 <meta charset="UTF-8">
 <title>Official Signup</title>
 <style>
-/* ===== Page Background ===== */
 body{
     margin:0;
     height:100vh;
     display:flex;
     justify-content:center;
     align-items:center;
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg,#0f172a,#020617,#1e293b);
-    background-size: 400% 400%;
-    animation: gradientMove 12s ease infinite;
+    font-family:'Segoe UI', sans-serif;
+    background:linear-gradient(135deg,#0f172a,#020617,#1e293b);
+    background-size:400% 400%;
+    animation:gradientMove 12s ease infinite;
     color:#e2e8f0;
 }
 
-/* Background animation */
 @keyframes gradientMove{
     0%{background-position:0% 50%;}
     50%{background-position:100% 50%;}
     100%{background-position:0% 50%;}
 }
 
-/* ===== Signup Card ===== */
 .signup-card{
-    width:360px;
+    width:380px;
     padding:35px;
     border-radius:15px;
-    backdrop-filter: blur(10px);
-    background: rgba(30,41,59,0.75);
+    backdrop-filter:blur(10px);
+    background:rgba(30,41,59,0.75);
     box-shadow:0 15px 40px rgba(0,0,0,0.6);
     text-align:center;
     transition:0.3s;
@@ -41,13 +38,11 @@ body{
     transform:translateY(-5px);
 }
 
-/* ===== Title ===== */
 .signup-card h2{
     margin-bottom:20px;
     font-weight:600;
 }
 
-/* ===== Inputs ===== */
 input,select{
     width:100%;
     padding:11px;
@@ -59,6 +54,7 @@ input,select{
     font-size:14px;
     outline:none;
     transition:0.2s;
+    box-sizing:border-box;
 }
 
 input:focus,select:focus{
@@ -66,7 +62,6 @@ input:focus,select:focus{
     box-shadow:0 0 5px #3b82f6;
 }
 
-/* ===== Buttons ===== */
 button{
     margin-top:10px;
     padding:10px 18px;
@@ -84,20 +79,33 @@ button:hover{
     box-shadow:0 5px 15px rgba(59,130,246,0.5);
 }
 
-/* ===== Message ===== */
-#msg{
-    margin-top:10px;
-    font-size:14px;
+button:disabled{
+    background:#64748b;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
 }
 
-/* ===== Popup ===== */
+.button-row{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+}
+
+#msg{
+    margin-top:12px;
+    font-size:14px;
+    min-height:20px;
+}
+
 #popup{
     margin-top:20px;
     padding:18px;
     border-radius:10px;
     background:#020617;
     border:1px solid #334155;
-    animation: popupFade 0.5s ease;
+    animation:popupFade 0.5s ease;
 }
 
 @keyframes popupFade{
@@ -105,7 +113,6 @@ button:hover{
     to{opacity:1; transform:translateY(0);}
 }
 
-/* ===== Access Key Input ===== */
 #accessKey{
     text-align:center;
     font-weight:bold;
@@ -116,69 +123,180 @@ button:hover{
 </head>
 <body>
 <div class="signup-card">
-  <h2>Official Signup Request</h2>
+    <h2>Official Signup Request</h2>
 
-  <input id="email" placeholder="Official Email">
-  <select id="department">
-    <option value="Police">Police</option>
-    <option value="Cyber">Cyber</option>
-    <option value="Fire">Fire</option>
-    <option value="Health">Health</option>
-  </select>
+    <input id="email" type="email" placeholder="Official Email">
 
-  <div>
-    <button onclick="requestSignup()">Submit Request</button>
-    <button onclick="checkStatus()">Check Approval</button>
-  </div>
+    <div class="button-row">
+        <button onclick="sendOTP()">Send OTP</button>
+    </div>
 
-  <div id="msg"></div>
+    <input id="otp" type="text" placeholder="Enter OTP">
 
-  <div id="popup" style="display:none;">
-    <h3>Approved ✅</h3>
-    <p><b>Access Key:</b></p>
-    <input id="accessKey" readonly>
-    <button onclick="copyKey()">Copy</button>
-  </div>
+    <div class="button-row">
+        <button onclick="verifyOTP()">Verify OTP</button>
+    </div>
+
+    <select id="department">
+        <option value="Police">Police</option>
+        <option value="Cyber">Cyber</option>
+        <option value="Fire">Fire</option>
+        <option value="Health">Health</option>
+    </select>
+
+    <div class="button-row">
+        <button id="submitBtn" onclick="requestSignup()" disabled>Submit Request</button>
+        <button onclick="checkStatus()">Check Approval</button>
+    </div>
+
+    <div id="msg"></div>
+
+    <div id="popup" style="display:none;">
+        <h3>Approved ✅</h3>
+        <p><b>Access Key:</b></p>
+        <input id="accessKey" readonly>
+        <button onclick="copyKey()">Copy</button>
+    </div>
 </div>
 
 <script>
-//const API = "http://localhost:5000";
+let otpVerified = false;
+
+function isValidOfficialEmail(email){
+    const allowedDomains = [
+        "police.gov.in",
+        "cyber.gov.in",
+        "fire.gov.in",
+        "health.gov.in",
+        "gov.in"
+    ];
+
+    email = email.toLowerCase();
+    return allowedDomains.some(domain => email.endsWith("@" + domain));
+}
+
+function setMessage(text, isSuccess){
+    const msg = document.getElementById("msg");
+    msg.innerText = text;
+    msg.style.color = isSuccess ? "lightgreen" : "#f87171";
+}
+
+async function sendOTP(){
+    const email = document.getElementById("email").value.trim().toLowerCase();
+
+    if(!email){
+        setMessage("Enter official email", false);
+        return;
+    }
+
+    if(!isValidOfficialEmail(email)){
+        setMessage("Only official domain emails allowed", false);
+        return;
+    }
+
+    try{
+        const res = await fetch("/api/official/send-otp", {
+            method: "POST",
+            headers: { "Content-Type":"application/json" },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await res.json();
+        setMessage(data.message || data.error, !!data.message);
+    }catch(e){
+        setMessage(e.message, false);
+    }
+}
+
+async function verifyOTP(){
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    const otp = document.getElementById("otp").value.trim();
+
+    if(!email || !otp){
+        setMessage("Enter email and OTP", false);
+        return;
+    }
+
+    try{
+        const res = await fetch("/api/official/verify-otp", {
+            method: "POST",
+            headers: { "Content-Type":"application/json" },
+            body: JSON.stringify({ email, otp })
+        });
+
+        const data = await res.json();
+
+        if(data.success){
+            otpVerified = true;
+            document.getElementById("submitBtn").disabled = false;
+            setMessage("Email verified successfully", true);
+        }else{
+            setMessage(data.error || "OTP verification failed", false);
+        }
+    }catch(e){
+        setMessage(e.message, false);
+    }
+}
 
 async function requestSignup(){
-  const email = document.getElementById("email").value;
-  const department = document.getElementById("department").value;
-  const msg = document.getElementById("msg");
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    const department = document.getElementById("department").value;
 
-  try{
-    const res = await fetch("/api/official/request", {
-      method: "POST",
-      headers: { "Content-Type":"application/json" },
-      body: JSON.stringify({ email, department })
-    });
-    const data = await res.json();
-    msg.innerText = data.message || data.error;
-    msg.style.color = data.message ? "green" : "red";
-  }catch(e){ msg.innerText = e.message; msg.style.color="red"; }
+    if(!otpVerified){
+        setMessage("Verify OTP before submitting request", false);
+        return;
+    }
+
+    try{
+        const res = await fetch("/api/official/request", {
+            method: "POST",
+            headers: { "Content-Type":"application/json" },
+            body: JSON.stringify({ email, department })
+        });
+
+        const data = await res.json();
+        setMessage(data.message || data.error, !!data.message);
+
+        if(data.message){
+            otpVerified = false;
+            document.getElementById("submitBtn").disabled = true;
+            document.getElementById("otp").value = "";
+        }
+    }catch(e){
+        setMessage(e.message, false);
+    }
 }
 
 async function checkStatus(){
-  const email = document.getElementById("email").value;
-  if(!email) return alert("Enter email!");
-  try{
-    const res = await fetch("/api/official/status?email=" + email);
-    const data = await res.json();
-    if (!data.approved) { alert("Not approved yet"); return; }
+    const email = document.getElementById("email").value.trim().toLowerCase();
 
-    document.getElementById("popup").style.display = "block";
-    document.getElementById("accessKey").value = data.accessKey;
-  }catch(e){ alert(e.message); }
+    if(!email){
+        alert("Enter email!");
+        return;
+    }
+
+    try{
+        const res = await fetch("/api/official/status?email=" + encodeURIComponent(email));
+        const data = await res.json();
+
+        if(!data.approved){
+            alert("Not approved yet");
+            return;
+        }
+
+        document.getElementById("popup").style.display = "block";
+        document.getElementById("accessKey").value = data.accessKey;
+    }catch(e){
+        alert(e.message);
+    }
 }
 
 function copyKey(){
-  const key = document.getElementById("accessKey");
-  key.select();
-  document.execCommand("copy");
-  alert("Access Key Copied!");
+    const key = document.getElementById("accessKey");
+    key.select();
+    key.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    alert("Access Key Copied!");
 }
 </script>
 </body>

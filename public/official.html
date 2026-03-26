@@ -186,39 +186,46 @@ if(msg.chatType === "history"){
         conversationPublicKeys[msg.replyToken] = msg.citizenPublicKey;
     }
 
+    
     for(const m of msg.messages){
+    m.replyToken = msg.replyToken;
 
-        // Ensure replyToken is attached
-        m.replyToken = msg.replyToken;
-
-        // Use stored citizen key if message doesn't include it
-        if(!m.citizenPublicKey){
-            m.citizenPublicKey = conversationPublicKeys[msg.replyToken];
-        }
-
-        let text;
-
-        try{
-            let result = await decryptMessage(m);
-
-if(m.isFile){
-    const blob = new Blob([result], { type: m.fileType || "image/jpeg" });
-    const url = URL.createObjectURL(blob);
-    text = `<img src="${url}" width="220"/>`;
-}else{
-    text = result;
-}
-        }catch(err){
-            console.log("Decrypt failed:", err);
-            text = "[Decryption Failed]";
-        }
-
-        messagesEl.innerHTML += `
-            <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
-            ${text}
-            <br><small>${new Date(m.timestamp).toLocaleTimeString()}</small><br><br>
-        `;
+    if(!m.citizenPublicKey){
+        m.citizenPublicKey = conversationPublicKeys[msg.replyToken];
     }
+}
+
+const results = await Promise.all(
+    msg.messages.map(m =>
+        decryptMessage(m).catch(err => {
+            console.log("Decrypt failed:", err);
+            return null;
+        })
+    )
+);
+
+for(let i = 0; i < msg.messages.length; i++){
+
+    const m = msg.messages[i];
+    const result = results[i];
+    let text;
+
+    if(result === null){
+        text = "[Decryption Failed]";
+    }else if(m.isFile){
+        const blob = new Blob([result], { type: m.fileType || "image/jpeg" });
+        const url = URL.createObjectURL(blob);
+        text = `<img src="${url}" width="220"/>`;
+    }else{
+        text = result;
+    }
+
+    messagesEl.innerHTML += `
+        <b>${m.from === "citizen" ? "Citizen" : "You"}:</b>
+        ${text}
+        <br><small>${new Date(m.timestamp).toLocaleTimeString()}</small><br><br>
+    `;
+}
 
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return;

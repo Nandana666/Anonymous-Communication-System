@@ -25,6 +25,11 @@
       "email": "officer@police.gov.in",
       "department": "Police",
       "accessKey": "7f85383fb4cb37c0"
+    },
+    "officer1@police.gov.in": {
+      "email": "officer1@police.gov.in",
+      "department": "Police",
+      "accessKey": "3459a7b19a5c53b8"
     }
   }
 }

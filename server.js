@@ -5,7 +5,10 @@ const WebSocket = require("ws");
 const crypto = require("crypto");
 const cors = require("cors");
 const fs = require("fs");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
+const resend = new Resend("re_NbWXfJEW_Cq6w1gwGMoU2hC6F9jRLuGLC");
+//const nodemailer = require("nodemailer");
+//const { set } = require("mongoose");
 
 const otpStore = new Map();
 const verifiedOfficials = new Set();
@@ -16,6 +19,7 @@ function generateOTP(){
 
 function isValidOfficialEmail(email){
     const allowedDomains = [
+        "rit.ac.in",
         "police.gov.in",
         "cyber.gov.in",
         "fire.gov.in",
@@ -28,13 +32,13 @@ function isValidOfficialEmail(email){
     );
 }
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: "yourgmail@gmail.com",
-        pass: "your_app_password"
-    }
-});
+// const transporter = nodemailer.createTransport({
+//     service: "gmail",
+//     auth: {
+//         user: "yourgmail@gmail.com",
+//         pass: "your_app_password"
+//     }
+// });
 const app = express();
 app.use(cors({
     origin: "*",
@@ -90,6 +94,7 @@ const privateRooms = new Map();
 // 🔐 Strict 2-User Secure Private Rooms
 const securePrivateRooms = new Map();
 const departments = {
+    College: new Set(),
     Police: new Set(),
     Cyber: new Set(),
     Fire: new Set(),
@@ -306,30 +311,60 @@ app.post("/api/official/send-otp", async (req, res) => {
         return res.status(400).json({ error: "Email required" });
 
     if (!isValidOfficialEmail(normalizedEmail))
-        return res.status(400).json({ error: "Only official domain emails allowed" });
+        return res.status(400).json({ error: "Invalid domain" });
 
     const otp = generateOTP();
-    console.log("OTP for", email, "is:", otp); // 🔥 DEMO LINE
-
     otpStore.set(normalizedEmail, otp);
-    res.json({
-    message: "OTP generated (check server console)"
-});
-    // try {
-    //     await transporter.sendMail({
-    //         from: "yourgmail@gmail.com",
-    //         to: email,
-    //         subject: "Official Verification OTP",
-    //         text: `Your OTP is: ${otp}`
-    //     });
 
-    //     res.json({ message: "OTP sent successfully" });
+    // ==============================
+    // ✅ REAL OTP → RIT DOMAIN
+    // ==============================
+    if (normalizedEmail.endsWith("@rit.ac.in")) {
 
-    // } catch (err) {
-    //     console.error("OTP send failed:", err);
-    //     res.status(500).json({ error: "Failed to send OTP" });
-    // }
-    
+    console.log("RIT OTP for", normalizedEmail, ":", otp); // backup for demo
+
+    try {
+        await resend.emails.send({
+            from: "onboarding@resend.dev",
+            to: normalizedEmail,
+            subject: "Official Verification OTP",
+            html: `<strong>Your OTP is: ${otp}</strong>`
+        });
+
+        return res.json({
+            message: "OTP sent to RIT email"
+        });
+
+    } catch (err) {
+        console.error("RIT email failed:", err);
+
+        return res.status(500).json({
+            error: "Failed to send OTP"
+        });
+    }
+}
+
+    // ==============================
+    // ✅ CONSOLE OTP → GOV DOMAIN
+    // ==============================
+    if (
+        normalizedEmail.endsWith("@police.gov.in") ||
+        normalizedEmail.endsWith("@cyber.gov.in") ||
+        normalizedEmail.endsWith("@fire.gov.in") ||
+        normalizedEmail.endsWith("@health.gov.in") ||
+        normalizedEmail.endsWith("@gov.in")
+    ) {
+
+        console.log("DEMO OTP for", normalizedEmail, ":", otp);
+
+        return res.json({
+            message: "Demo OTP generated (check server console)"
+        });
+    }
+
+    return res.status(400).json({
+        error: "Unsupported domain"
+    });
 });
 // Verify OTP
 app.post("/api/official/verify-otp", (req, res) => {
@@ -591,20 +626,30 @@ ws.replyToken = replyToken;
     if (!replyData[replyToken]) return;
 
     // ✅ FIRST mark messages as read
-    replyData[replyToken].messages.forEach(msg => {
+    // ✅ SEND HISTORY FIRST
+ws.send(JSON.stringify({
+    chatType: "history",
+    department: dept,
+    replyToken,
+    citizenPublicKey: replyData[replyToken].citizenPublicKey,
+    officialPublicKey: replyData[replyToken].officialPublicKey,
+    messages: replyData[replyToken].messages
+}));
 
-        if (ws.isOfficial && msg.from === "citizen") {
-            msg.readByOfficial = true;
-        }
+// ✅ THEN update read flags after sending
+replyData[replyToken].messages.forEach(msg => {
 
-        if (ws.isCitizen && msg.from === "official") {
-            msg.readByCitizen = true;
-        }
-    });
+    if (ws.isOfficial && msg.from === "citizen") {
+        msg.readByOfficial = true;
+    }
 
-    // Save updated read flags
-    fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
-    // 🔄 Recalculate conversations after marking as read
+    if (ws.isCitizen && msg.from === "official") {
+        msg.readByCitizen = true;
+    }
+});
+
+fs.writeFileSync(replyFile, JSON.stringify(replyData, null, 2));
+
 const conversations = [];
 
 Object.keys(replyData).forEach(tokenKey => {
@@ -622,23 +667,12 @@ Object.keys(replyData).forEach(tokenKey => {
     });
 });
 
-// Send updated conversation list
 ws.send(JSON.stringify({
     type: "conversationList",
     conversations
 }));
-   // ✅ THEN send updated history (INCLUDING citizen key)
-ws.send(JSON.stringify({
-    chatType: "history",
-    department: dept,
-    replyToken,
-    citizenPublicKey: replyData[replyToken].citizenPublicKey,
-    citizenPrivateKey: replyData[replyToken].citizenPrivateKey,   // ADD THIS
-    officialPublicKey: replyData[replyToken].officialPublicKey,
-    messages: replyData[replyToken].messages
-}));
 
-    return;
+return;
 }
         // Citizen-to-official
         if (message.chatType === "cto") {

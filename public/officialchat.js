@@ -109,7 +109,15 @@ if(data.replyToken && !replyToken){
     let text;
 
     try{
-        text = await decryptMessage(m);
+        let result = await decryptMessage(m);
+
+if(m.isFile){
+    const blob = new Blob([result], { type: m.fileType });
+    const url = URL.createObjectURL(blob);
+    text = `<img src="${url}" width="200"/>`;
+}else{
+    text = result;
+}
     }catch(err){
         console.log("Decrypt failed:", err);
         text = "[Decryption failed]";
@@ -139,7 +147,15 @@ if(data.chatType === "otc"){
         let text;
 
         try{
-            text = await decryptMessage(data);
+           let result = await decryptMessage(data);
+
+if(data.isFile){
+    const blob = new Blob([result], { type: data.fileType });
+    const url = URL.createObjectURL(blob);
+    text = `<img src="${url}" width="200"/>`;
+}else{
+    text = result;
+}
         }catch(err){
             console.log("Decrypt failed:", err);
             text = "[Decryption failed]";
@@ -217,7 +233,63 @@ window.sendC2OMessage = async function(){
     addMessage("You", input.value, Date.now());
     input.value = "";
 };
+window.sendFile = async function(){
 
+    const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+
+    if(!file) return alert("Select a file!");
+
+    const dept = document.getElementById("department").value;
+
+    const fileBuffer = await file.arrayBuffer();
+
+    if(!citizenKeyPair){
+        citizenKeyPair = await crypto.subtle.generateKey(
+            { name:"ECDH", namedCurve:"P-256" },
+            true,
+            ["deriveBits"]
+        );
+    }
+
+    const publicKeyRaw = await crypto.subtle.exportKey("raw", citizenKeyPair.publicKey);
+
+    const sharedSecret = await crypto.subtle.deriveBits(
+        { name:"ECDH", public: departmentPublicKey },
+        citizenKeyPair.privateKey,
+        256
+    );
+
+    const aesKey = await crypto.subtle.importKey(
+        "raw",
+        await crypto.subtle.digest("SHA-256", sharedSecret),
+        { name:"AES-GCM" },
+        false,
+        ["encrypt"]
+    );
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const encrypted = await crypto.subtle.encrypt(
+        { name:"AES-GCM", iv },
+        aesKey,
+        fileBuffer
+    );
+
+    socket.send(JSON.stringify({
+        chatType: "cto",
+        replyToken: replyToken || null,
+        department: dept,
+        ciphertext: bufferToHex(encrypted),
+        iv: bufferToHex(iv),
+        citizenPublicKey: bufferToHex(publicKeyRaw),
+        fileType: file.type,
+        isFile: true,
+        timestamp: Date.now()
+    }));
+
+    addMessage("You", "📷 Image sent", Date.now());
+};
 // ================= LOAD OR CREATE KEYPAIR =================
 async function loadOrCreateCitizenKeys(){
 
@@ -346,7 +418,11 @@ const sharedSecret = await crypto.subtle.deriveBits(
         hexToBuffer(data.ciphertext)
     );
 
+    if(data.isFile){
+    return decrypted; // return raw binary
+}else{
     return new TextDecoder().decode(decrypted);
+}
 }
 // ================= UI =================
 function addMessage(sender, text, timestamp){

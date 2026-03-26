@@ -711,7 +711,9 @@ replyData[replyToken].messages.push({
     from: "citizen",
     ciphertext: message.ciphertext,
     iv: message.iv,
-    citizenPublicKey: message.citizenPublicKey, // important for ECDH
+    citizenPublicKey: message.citizenPublicKey,
+    fileType: message.fileType || null,   // 🔥 ADD
+    isFile: message.isFile || false,      // 🔥 ADD
     timestamp: message.timestamp,
     readByOfficial: false
 });
@@ -757,6 +759,8 @@ departments[dept].forEach(client => {
     ciphertext: message.ciphertext,
     iv: message.iv,
     citizenPublicKey: message.citizenPublicKey,
+    fileType: message.fileType || null,   // 🔥 ADD
+    isFile: message.isFile || false,      // 🔥 ADD
     timestamp: message.timestamp,
     replyToken: replyToken
 }));
@@ -797,7 +801,9 @@ if (!replyData[replyToken].officialPublicKey && message.officialPublicKey) {
     from: "official",
     ciphertext: message.ciphertext,
     iv: message.iv,
-    officialPublicKey: message.officialPublicKey, // 🔐 important
+    officialPublicKey: message.officialPublicKey,
+    fileType: message.fileType || null,   // 🔥 ADD
+    isFile: message.isFile || false,      // 🔥 ADD
     timestamp: message.timestamp,
     readByCitizen: false
 });

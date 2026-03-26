@@ -199,7 +199,15 @@ if(msg.chatType === "history"){
         let text;
 
         try{
-            text = await decryptMessage(m);
+            let result = await decryptMessage(m);
+
+if(m.isFile){
+    const blob = new Blob([result], { type: m.fileType || "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+    text = `<img src="${url}" width="220"/>`;
+}else{
+    text = result;
+}
         }catch(err){
             console.log("Decrypt failed:", err);
             text = "[Decryption Failed]";
@@ -237,7 +245,16 @@ if(msg.chatType === "history"){
     return;
 }
 
-    const text = await decryptMessage(msg);
+    let result = await decryptMessage(msg);
+let text;
+
+if(msg.isFile){
+    const blob = new Blob([result], { type: msg.fileType || "image/jpeg" });
+    const url = URL.createObjectURL(blob);
+    text = `<img src="${url}" width="220"/>`;
+}else{
+    text = result;
+}
 
     messagesEl.innerHTML += `
         <b>Citizen:</b>
@@ -355,7 +372,11 @@ async function decryptMessage(data){
         hexToBuffer(data.ciphertext)
     );
 
+    if(data.isFile){
+    return decrypted; // return binary
+}else{
     return new TextDecoder().decode(decrypted);
+}
 }
 
 // --------------------
